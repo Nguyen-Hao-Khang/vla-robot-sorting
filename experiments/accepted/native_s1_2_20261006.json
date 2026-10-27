@@ -1,0 +1,55 @@
+{
+  "schema": "accepted-native-gate-v1",
+  "gate_id": "S1.2",
+  "classification": "PASS",
+  "accepted_at": "2026-10-06",
+  "review": "docs/reviews/native-gate-20261006-s1.2-retiming-pass.md",
+  "source_bridge_relative": "incoming/linux-session-20261006-060918-20261006T011103Z",
+  "linux_git_head": "81b06cf037e26405b883faf1d1f49f4b643cd6eb",
+  "top_level_sha256": {
+    "checked": 18,
+    "failures": 0
+  },
+  "dedicated_evidence_sha256": {
+    "checked": 9,
+    "failures": 0
+  },
+  "gates": {
+    "B1": {
+      "passed": true,
+      "runs": 10,
+      "successes": 10,
+      "planning_median_ms": 74.77,
+      "planning_p95_ms": 88.07,
+      "sampled_vram_mib": 1010.0
+    },
+    "B2": {
+      "passed": true,
+      "runs": 30,
+      "planning_successes": 30,
+      "camera_failures": 0,
+      "planner_median_ms": 92.56,
+      "camera_median_ms": 685.00,
+      "camera_p95_ms": 693.38,
+      "sampled_vram_mib": 1615.0
+    },
+    "B3": {
+      "passed": true,
+      "runs": 10,
+      "successful_plans": 5,
+      "failed_orientation_plans": 5,
+      "collision_rechecked_waypoints": 495,
+      "collision_findings": 0
+    },
+    "B4": {
+      "passed": true,
+      "runs": 20,
+      "safe_runs": 20,
+      "max_time_dilation_factor": 5,
+      "peak_velocity_rad_s": 0.08872,
+      "peak_acceleration_rad_s2": 1.99823,
+      "peak_jerk_rad_s3": 124.889,
+      "max_splice_velocity_discontinuity_rad_s": 0.00000373
+    }
+  }
+}

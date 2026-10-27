@@ -1,0 +1,15 @@
+{
+  "_comment": "Digital-twin camera poses in the RoboTwin world frame (metres). Replace 'workspace' with the measured pose of the real overview camera once it is mounted; the wrist camera follows the robot's wrist link.",
+  "workspace": {
+    "position": [0.0, 0.12, 1.25],
+    "look_at": [0.0, -0.12, 0.74],
+    "fovy_deg": 55.0,
+    "width": 640,
+    "height": 480
+  },
+  "record": {
+    "width": 320,
+    "height": 240,
+    "fps": 15
+  }
+}

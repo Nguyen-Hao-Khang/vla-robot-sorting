@@ -1,0 +1,101 @@
+{
+  "schema": "sprint1-scenario-matrix-v1",
+  "scenarios": [
+    {
+      "scenario_id": "S1-R-001",
+      "suite": "regression",
+      "description": "Direct bilingual-safe semantic request with unique target and destination.",
+      "native_required": false,
+      "expected_behavior": "structured_success",
+      "required_evidence": ["semantic_result"]
+    },
+    {
+      "scenario_id": "S1-R-002",
+      "suite": "regression",
+      "description": "Geometry-first box grasp generation produces full-SE(3) candidates.",
+      "native_required": false,
+      "expected_behavior": "grasp_candidates_generated",
+      "required_evidence": ["grasp_candidates"]
+    },
+    {
+      "scenario_id": "S1-R-003",
+      "suite": "regression",
+      "description": "Safe bounded motion plan reaches execution boundary under fixed revisions.",
+      "native_required": false,
+      "expected_behavior": "bounded_motion_cycle",
+      "required_evidence": ["motion_cycle_result"]
+    },
+    {
+      "scenario_id": "S1-R-004",
+      "suite": "regression",
+      "description": "Native Panthera head/wrist RGB and actual-qpos observation.",
+      "native_required": true,
+      "expected_behavior": "observation_pass",
+      "required_evidence": ["head_rgb", "wrist_rgb", "actual_qpos"]
+    },
+    {
+      "scenario_id": "S1-R-005",
+      "suite": "regression",
+      "description": "Native canonical Panthera single-arm episode completes and artifacts validate.",
+      "native_required": true,
+      "expected_behavior": "episode_success",
+      "required_evidence": ["hdf5", "videos", "trajectory", "resource_telemetry"]
+    },
+    {
+      "scenario_id": "S1-A-001",
+      "suite": "adversarial",
+      "description": "Ambiguous target language must request clarification.",
+      "native_required": false,
+      "expected_behavior": "clarify",
+      "required_evidence": ["semantic_result"]
+    },
+    {
+      "scenario_id": "S1-A-002",
+      "suite": "adversarial",
+      "description": "Moved target invalidates current plan and requests bounded replan.",
+      "native_required": false,
+      "expected_behavior": "replan",
+      "required_evidence": ["scene_change", "recovery_decision"]
+    },
+    {
+      "scenario_id": "S1-A-003",
+      "suite": "adversarial",
+      "description": "Moved destination invalidates placement goal and requests bounded replan.",
+      "native_required": false,
+      "expected_behavior": "replan",
+      "required_evidence": ["scene_change", "recovery_decision"]
+    },
+    {
+      "scenario_id": "S1-A-004",
+      "suite": "adversarial",
+      "description": "Occluded target requests reobservation instead of blind execution.",
+      "native_required": false,
+      "expected_behavior": "reobserve",
+      "required_evidence": ["scene_change", "recovery_decision"]
+    },
+    {
+      "scenario_id": "S1-A-005",
+      "suite": "adversarial",
+      "description": "Removed target must never execute stale target coordinates.",
+      "native_required": false,
+      "expected_behavior": "reason_or_abort",
+      "required_evidence": ["scene_change", "recovery_decision"]
+    },
+    {
+      "scenario_id": "S1-A-006",
+      "suite": "adversarial",
+      "description": "Observable grasp failure triggers bounded regrasp or safe escalation.",
+      "native_required": false,
+      "expected_behavior": "regrasp",
+      "required_evidence": ["recovery_decision"]
+    },
+    {
+      "scenario_id": "S1-A-007",
+      "suite": "adversarial",
+      "description": "Planner collision/timeout cannot bypass safety or execute a stale trajectory.",
+      "native_required": true,
+      "expected_behavior": "safe_failure",
+      "required_evidence": ["planner_failure", "no_execution"]
+    }
+  ]
+}

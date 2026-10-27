@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "purpose": "Native B5 geometry-first 6-DoF grasp and B7 stale-segment recovery gates",
+  "runs": 20,
+  "max_candidate_evaluations": 48,
+  "non_top_down_abs_approach_z_max": 0.5,
+  "minimum_table_clearance_m": 0.0,
+  "cylinder_side_grasp_height_fractions": [0.0, 0.25, 0.75],
+  "box_side_grasp_height_fractions": [0.0, 0.25, 0.75],
+  "box_parallel_jaw_roll_variants": true,
+  "terminal_reachability": {
+    "backend": "robotwin-curobo",
+    "policy": "full-SE3 planning plus dynamic-limit and self-collision validation"
+  },
+  "perturbation": {
+    "translation_m": 0.025,
+    "axis": "y"
+  },
+  "execution_probe": {
+    "requested_horizon_s": 0.2
+  },
+  "policy": {
+    "allow_terminal_target_contact": true,
+    "require_pregrasp_environment_collision_free": true,
+    "require_planning_world_resync_after_perturbation": true,
+    "require_terminal_self_collision_free": true,
+    "require_dynamic_limits": true,
+    "require_all_runs_pass": true
+  }
+}

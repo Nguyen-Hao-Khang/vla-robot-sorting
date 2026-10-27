@@ -1,0 +1,48 @@
+{
+  "schema": "accepted-native-gate-v1",
+  "gate_id": "S1.6-INTEGRATED",
+  "classification": "PASS_AUDITED",
+  "accepted_at": "2026-10-07",
+  "review": "docs/reviews/native-gate-20261007-integrated-runtime-pass.md",
+  "source_bridge_relative": "incoming/linux-session-20261007-213416-20261007T154416Z",
+  "linux_git_head": "f627b59e1d535b83d21c75a61520229d89104a35",
+  "dedicated_evidence_sha256": {
+    "checked": 46,
+    "failures": 0
+  },
+  "runtime_grounding_pregrasp": {
+    "passed": true,
+    "seeds": [0, 1],
+    "audited_passes": 2,
+    "path_samples": [784, 734],
+    "collision_free": [true, true],
+    "dynamic_safe": [true, true],
+    "execution_status": ["completed", "completed"],
+    "physics_steps": [50, 50],
+    "max_tracking_error_rad": [
+      0.00010426990047562867,
+      0.0001212881543324329
+    ]
+  },
+  "destination_recovery": {
+    "passed": true,
+    "seeds": [0, 1],
+    "change_kind": ["destination_moved", "destination_moved"],
+    "decision_action": ["replan", "replan"]
+  },
+  "resources": {
+    "passed": true,
+    "samples": 728,
+    "peak_gpu_util_percent": 69.0,
+    "peak_vram_mib": 1797.0,
+    "vram_total_mib": 6144.0,
+    "peak_memory_util_percent": 15.0
+  },
+  "artifacts": {
+    "integrated_seed_0_sha256": "c14644d3a54ecf24695650affafe12c42e197d2b1f589f4ff48b788aa135f65c",
+    "integrated_seed_0_audit_sha256": "8833d706fa6e65827023f8f032a4b11dacf39d949af79a0a155008bc6d82a2ef",
+    "integrated_seed_1_sha256": "47d0ff8da6a04cd0aff2c52a689dd5d68770ea05db3235f9aa064aa402658e80",
+    "integrated_seed_1_audit_sha256": "9b1199d5535c1c7c50641fe938b6c2effc42e97337ec6ec88dd6056d86aad0ea",
+    "resource_summary_sha256": "f86e429bd28ab0baccd1eb9ad9e2a02b76512a2bbaec091faf877cc799354eeb"
+  }
+}

@@ -1,0 +1,40 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.runtime/
+.coverage
+coverage.xml
+htmlcov/
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Large/reference binaries are preserved locally and inventoried by SHA256.
+*.pdf
+*.zip
+
+# Generated experiment outputs: keep metadata/summaries selectively.
+experiments/results/*
+!experiments/results/.gitkeep
+
+# Local simulator/vendor checkouts should not be vendored accidentally.
+external/
+third_party/
+
+# Datasets, checkpoints and training outputs (store outside Git)
+data/
+datasets/
+outputs/
+checkpoints/
+wandb/
+*.ckpt
+*.safetensors
+*.mp4
+*.hdf5

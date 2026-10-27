@@ -1,0 +1,45 @@
+{
+  "schema": "accepted-native-gate-v1",
+  "gate_id": "S1.1",
+  "classification": "PASS_AUDITED",
+  "accepted_at": "2026-10-05",
+  "review": "docs/reviews/native-gate-20261005-s1.1-audited-pass.md",
+  "source_bridge_relative": "incoming/linux-session-20261005-231041-20261005T161923Z",
+  "linux_git_head": "339e0e4098335806e8d9ac5dbfcbf035dea79d84",
+  "top_level_sha256": {
+    "checked": 18,
+    "failures": 0
+  },
+  "raw_result_classification": "FAIL",
+  "raw_result_failure_stage": "artifact-validation",
+  "accepted_override_reason": "post-run resource-summary shell/heredoc validator defect after canonical episode exit 0",
+  "observation": {
+    "passed": true,
+    "head_rgb": {"width_px": 320, "height_px": 240},
+    "wrist_rgb": {"width_px": 640, "height_px": 360},
+    "actual_qpos_dof": 6,
+    "proprioception_source": "Robot.get_left_arm_real_jointState",
+    "render_profile": {"spp": 1, "path_depth": 2, "denoiser": "none"}
+  },
+  "planner_initialization": {
+    "passed": true,
+    "duration_s": 18.032753
+  },
+  "canonical_episode": {
+    "passed": true,
+    "process_exit_status": 0,
+    "samples": 158,
+    "hdf5_bytes": 38507536,
+    "trajectory_bytes": 74190,
+    "head_video_frames": 158,
+    "wrist_video_frames": 158
+  },
+  "resources": {
+    "wall_time_s": 100.40,
+    "gpu_samples": 100,
+    "peak_gpu_utilization_percent": 100.0,
+    "peak_vram_mib": 2279.0,
+    "vram_total_mib": 6144.0,
+    "peak_host_rss_kib": 3784880
+  }
+}

@@ -1,0 +1,332 @@
+{
+  "schema": "damh.object-observations-2d.v1",
+  "source_classification": "recorded_sim_observation",
+  "camera_id": "wrist_camera",
+  "frame_index": 0,
+  "frame_count": 158,
+  "image_size_px": [
+    640,
+    360
+  ],
+  "episode_sha256": "092f3011ce1a39f997ec6764144a0b7d62cc8dc97575724b72c0bc44c246e84f",
+  "rgb_sha256": "cdd77e82798e1d053c881376f3ded3daae563cac2019d01ccf8c5426a5a8cca5",
+  "calibration_sha256": "f14fbaf458b65c965c9c3d3b49abedf3eab169692a059b50fa99fea01a750adc",
+  "observation_timestamp_s": null,
+  "observation_timestamp_source": null,
+  "scene_revision": null,
+  "scene_revision_source": null,
+  "calibration": {
+    "intrinsic_cv": [
+      [
+        324.7286071777344,
+        0.0,
+        320.0
+      ],
+      [
+        0.0,
+        324.7286071777344,
+        180.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "extrinsic_world_to_camera_cv": [
+      [
+        0.9999999403953552,
+        1.6689300537109375e-06,
+        1.6391277313232422e-07,
+        0.008750468492507935
+      ],
+      [
+        7.152557373046875e-07,
+        -0.3420180082321167,
+        -0.9396933913230896,
+        0.8252604007720947
+      ],
+      [
+        -1.5497207641601562e-06,
+        0.9396933913230896,
+        -0.3420179784297943,
+        0.6110206842422485
+      ]
+    ],
+    "camera_to_world_gl": [
+      [
+        1.0,
+        -6.968346042413032e-07,
+        1.5248153886204818e-06,
+        -0.008750143460929394
+      ],
+      [
+        1.671189011176466e-06,
+        0.3420180678367615,
+        -0.9396933913230896,
+        -0.29191821813583374
+      ],
+      [
+        1.3329639614312327e-07,
+        0.9396933913230896,
+        0.3420180678367615,
+        0.9844717979431152
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "camera_to_world_cv": [
+      [
+        1.0,
+        6.968346042413032e-07,
+        -1.5248153886204818e-06,
+        -0.008750143460929394
+      ],
+      [
+        1.671189011176466e-06,
+        -0.3420180678367615,
+        0.9396933913230896,
+        -0.29191821813583374
+      ],
+      [
+        1.3329639614312327e-07,
+        -0.9396933913230896,
+        -0.3420180678367615,
+        0.9844717979431152
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "depth_available": false,
+  "observations": [
+    {
+      "object_id": "wrist-blue-bottle-like-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "image_width_px": 640,
+      "image_height_px": 360,
+      "label": "blue bottle-like object",
+      "bbox_xyxy_px": [
+        184,
+        108,
+        294,
+        255
+      ],
+      "mask_rle": null,
+      "visibility": "partially_occluded",
+      "confidence": null,
+      "provenance": {
+        "source_kind": "manual_visual_annotation",
+        "annotation_set_id": "s1v3-native-episode0-frame0-visual-review",
+        "annotator_id": "assistant_visual_review",
+        "annotation_file_sha256": "4a9dfaec1785cbaba3827869f2c40b7eaaf4189d8c8b7a4f6316ae73d1416ca0",
+        "episode_sha256": "092f3011ce1a39f997ec6764144a0b7d62cc8dc97575724b72c0bc44c246e84f",
+        "rgb_sha256": "cdd77e82798e1d053c881376f3ded3daae563cac2019d01ccf8c5426a5a8cca5",
+        "source_image_path": "D:\\DAMH-Bridge\\incoming\\s1v_raw_episode_export_20261011T053117Z\\files\\move_pillbottle_pad\\move_pillbottle_pad_panthera_single\\data\\episode0.hdf5",
+        "camera_id": "wrist_camera",
+        "frame_index": 0
+      },
+      "metric_pose_world": null,
+      "controller_eligible": false
+    },
+    {
+      "object_id": "wrist-dark-small-object-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "image_width_px": 640,
+      "image_height_px": 360,
+      "label": "dark small object",
+      "bbox_xyxy_px": [
+        377,
+        165,
+        418,
+        210
+      ],
+      "mask_rle": null,
+      "visibility": "visible",
+      "confidence": null,
+      "provenance": {
+        "source_kind": "manual_visual_annotation",
+        "annotation_set_id": "s1v3-native-episode0-frame0-visual-review",
+        "annotator_id": "assistant_visual_review",
+        "annotation_file_sha256": "4a9dfaec1785cbaba3827869f2c40b7eaaf4189d8c8b7a4f6316ae73d1416ca0",
+        "episode_sha256": "092f3011ce1a39f997ec6764144a0b7d62cc8dc97575724b72c0bc44c246e84f",
+        "rgb_sha256": "cdd77e82798e1d053c881376f3ded3daae563cac2019d01ccf8c5426a5a8cca5",
+        "source_image_path": "D:\\DAMH-Bridge\\incoming\\s1v_raw_episode_export_20261011T053117Z\\files\\move_pillbottle_pad\\move_pillbottle_pad_panthera_single\\data\\episode0.hdf5",
+        "camera_id": "wrist_camera",
+        "frame_index": 0
+      },
+      "metric_pose_world": null,
+      "controller_eligible": false
+    },
+    {
+      "object_id": "wrist-white-cap-dark-body-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "image_width_px": 640,
+      "image_height_px": 360,
+      "label": "white-capped dark bottle-like object",
+      "bbox_xyxy_px": [
+        475,
+        157,
+        566,
+        302
+      ],
+      "mask_rle": null,
+      "visibility": "partially_occluded",
+      "confidence": null,
+      "provenance": {
+        "source_kind": "manual_visual_annotation",
+        "annotation_set_id": "s1v3-native-episode0-frame0-visual-review",
+        "annotator_id": "assistant_visual_review",
+        "annotation_file_sha256": "4a9dfaec1785cbaba3827869f2c40b7eaaf4189d8c8b7a4f6316ae73d1416ca0",
+        "episode_sha256": "092f3011ce1a39f997ec6764144a0b7d62cc8dc97575724b72c0bc44c246e84f",
+        "rgb_sha256": "cdd77e82798e1d053c881376f3ded3daae563cac2019d01ccf8c5426a5a8cca5",
+        "source_image_path": "D:\\DAMH-Bridge\\incoming\\s1v_raw_episode_export_20261011T053117Z\\files\\move_pillbottle_pad\\move_pillbottle_pad_panthera_single\\data\\episode0.hdf5",
+        "camera_id": "wrist_camera",
+        "frame_index": 0
+      },
+      "metric_pose_world": null,
+      "controller_eligible": false
+    },
+    {
+      "object_id": "wrist-red-rectangle-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "image_width_px": 640,
+      "image_height_px": 360,
+      "label": "red rectangular object",
+      "bbox_xyxy_px": [
+        360,
+        282,
+        460,
+        342
+      ],
+      "mask_rle": null,
+      "visibility": "visible",
+      "confidence": null,
+      "provenance": {
+        "source_kind": "manual_visual_annotation",
+        "annotation_set_id": "s1v3-native-episode0-frame0-visual-review",
+        "annotator_id": "assistant_visual_review",
+        "annotation_file_sha256": "4a9dfaec1785cbaba3827869f2c40b7eaaf4189d8c8b7a4f6316ae73d1416ca0",
+        "episode_sha256": "092f3011ce1a39f997ec6764144a0b7d62cc8dc97575724b72c0bc44c246e84f",
+        "rgb_sha256": "cdd77e82798e1d053c881376f3ded3daae563cac2019d01ccf8c5426a5a8cca5",
+        "source_image_path": "D:\\DAMH-Bridge\\incoming\\s1v_raw_episode_export_20261011T053117Z\\files\\move_pillbottle_pad\\move_pillbottle_pad_panthera_single\\data\\episode0.hdf5",
+        "camera_id": "wrist_camera",
+        "frame_index": 0
+      },
+      "metric_pose_world": null,
+      "controller_eligible": false
+    }
+  ],
+  "metric_object_pose_available": false,
+  "controller_eligible": false,
+  "limitations": [
+    "object labels and boxes are manual visual annotations, not detector output",
+    "one pixel defines only a ray; no metric depth or object pose is inferred",
+    "observations do not authorize grasp planning or robot control"
+  ],
+  "camera_rays": [
+    {
+      "object_id": "wrist-blue-bottle-like-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "pixel_uv": [
+        239.0,
+        181.5
+      ],
+      "origin_world": [
+        -0.008750143460929394,
+        -0.29191821813583374,
+        0.9844717979431152
+      ],
+      "direction_world": [
+        -0.2420223896851408,
+        0.9102142528914842,
+        -0.336058293640093
+      ],
+      "metric_depth_m": null,
+      "controller_eligible": false
+    },
+    {
+      "object_id": "wrist-dark-small-object-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "pixel_uv": [
+        397.5,
+        187.5
+      ],
+      "origin_world": [
+        -0.008750143460929394,
+        -0.29191821813583374,
+        0.9844717979431152
+      ],
+      "direction_world": [
+        0.23208109678145253,
+        0.9061111805239692,
+        -0.35369604612742994
+      ],
+      "metric_depth_m": null,
+      "controller_eligible": false
+    },
+    {
+      "object_id": "wrist-white-cap-dark-body-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "pixel_uv": [
+        520.5,
+        229.5
+      ],
+      "origin_world": [
+        -0.008750143460929394,
+        -0.29191821813583374,
+        0.9844717979431152
+      ],
+      "direction_world": [
+        0.520999210053144,
+        0.7489303334484531,
+        -0.4094669446546192
+      ],
+      "metric_depth_m": null,
+      "controller_eligible": false
+    },
+    {
+      "object_id": "wrist-red-rectangle-01",
+      "camera_id": "wrist_camera",
+      "frame_index": 0,
+      "pixel_uv": [
+        410.0,
+        312.0
+      ],
+      "origin_world": [
+        -0.008750143460929394,
+        -0.29191821813583374,
+        0.9844717979431152
+      ],
+      "direction_world": [
+        0.2486853606276024,
+        0.7184250833543657,
+        -0.649631427054443
+      ],
+      "metric_depth_m": null,
+      "controller_eligible": false
+    }
+  ],
+  "export_classification": "S1V_SUPPLEMENTAL_RAW_EXPORT_NOT_ACCEPTED",
+  "export_report_sha256": "b739fb9f72cd1a93daf27b2a9fe35db7ce12690f5611861e6222e7d8819f58c5",
+  "annotation_manifest_path": "D:\\DAMH-Bridge\\worktrees\\s1v3-visual-observation\\experiments\\annotations\\s1v3_manual_frame0.json",
+  "preview_path": "D:\\DAMH-Bridge\\worktrees\\s1v3-visual-observation\\experiments\\evidence\\s1v3_visual_observation\\wrist_camera_frame_000_manual-overlay.png",
+  "preview_sha256": "db1894a50ead9a8f1e62adf85caac69eeebb9be994ae65fd2ce1172f4dabefd5",
+  "automatic_detector_used": false,
+  "metric_3d_localization_performed": false
+}

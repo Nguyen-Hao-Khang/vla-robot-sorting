@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sprint 1 bilingual semantic-command evaluation record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "language",
+    "paired_case_id",
+    "semantic_equivalence_id",
+    "command",
+    "operation",
+    "target",
+    "destination",
+    "grounding_expectation",
+    "expected_behavior",
+    "ambiguity_reason",
+    "observation_reason",
+    "safety_reason",
+    "difficulty",
+    "tags",
+    "evaluation_stage",
+    "normalized_intent_id"
+  ],
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^BC-[0-9]{3}$" },
+    "language": { "type": "string", "enum": ["en", "vi", "code_switch"] },
+    "paired_case_id": { "anyOf": [{ "type": "string", "pattern": "^BC-[0-9]{3}$" }, { "type": "null" }] },
+    "semantic_equivalence_id": { "anyOf": [{ "type": "string", "pattern": "^EQ-[0-9]{3}$" }, { "type": "null" }] },
+    "command": { "type": "string", "minLength": 3 },
+    "operation": { "anyOf": [{ "type": "string", "enum": ["pick_and_place"] }, { "type": "null" }] },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "category", "attributes", "relation", "relation_reference"],
+      "properties": {
+        "reference": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "category": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "shape", "size", "location"],
+          "properties": {
+            "color": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+            "shape": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+            "size": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+            "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+          }
+        },
+        "relation": { "anyOf": [{ "type": "string", "enum": ["left_of", "right_of", "front_of", "behind", "nearest_to", "farthest_from", "beside", "between", "inside", "on_top_of", "near"] }, { "type": "null" }] },
+        "relation_reference": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      }
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "category", "attributes"],
+      "properties": {
+        "reference": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "category": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "location"],
+          "properties": {
+            "color": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+            "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+          }
+        }
+      }
+    },
+    "grounding_expectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "destination"],
+      "properties": {
+        "target": { "type": "string", "enum": ["unique", "multiple", "not_visible", "not_present", "not_applicable"] },
+        "destination": { "type": "string", "enum": ["unique", "multiple", "not_visible", "not_present", "not_applicable"] }
+      }
+    },
+    "expected_behavior": { "type": "string", "enum": ["structured_success", "clarify", "reobserve", "abort"] },
+    "ambiguity_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "observation_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "safety_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "difficulty": { "type": "string", "enum": ["L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"] },
+    "tags": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "evaluation_stage": { "type": "string", "enum": ["semantic_only", "semantic_and_grounding"] },
+    "normalized_intent_id": { "type": "string", "minLength": 3 }
+  }
+}

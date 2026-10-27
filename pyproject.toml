@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vla-robot-sorting"
+version = "0.1.0"
+description = "Panthera-HT VLA object-sorting research and simulation stack"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "UNLICENSED" }
+authors = [
+  { name = "Nguyen Hao Khang" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+native-camera-replay = [
+  "h5py>=3.11,<4",
+  "numpy>=1.26,<3",
+  "Pillow>=10,<13",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vla_robot_sorting"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "integration: tests requiring multiple project components",
+  "simulator: tests requiring a simulator/runtime not guaranteed on Windows",
+  "network: tests requiring external network/API access",
+]
+
+[tool.ruff]
+extend-exclude = ["notebooks"]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

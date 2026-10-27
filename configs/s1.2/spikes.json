@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "purpose": "Native-Ubuntu S1.2 backend validation gates after S1.1 host/simulator smoke passes",
+  "policy": {
+    "canonical_simulator": "Panthera-HT + RoboTwin",
+    "abort_on_failed_prerequisite": true,
+    "do_not_change_pins_automatically": true,
+    "record_raw_failure_as_evidence": true
+  },
+  "spikes": [
+    {
+      "id": "B1",
+      "name": "curobo_install_warmup",
+      "requires": ["S1.1_PASS"],
+      "hypothesis": "Pinned CuRobo v0.7.8 imports and returns typed IK/planning results on the target host",
+      "minimum_runs": 10,
+      "pass": [
+        "pinned commit verified",
+        "import succeeds",
+        "at least one feasible collision-free fixed-pose result",
+        "no monotonic GPU-memory growth across warmup calls"
+      ],
+      "evidence": ["environment_export", "raw_log", "latencies_json", "gpu_memory_csv"]
+    },
+    {
+      "id": "B2",
+      "name": "renderer_camera_curobo_coexistence",
+      "requires": ["B1_PASS"],
+      "hypothesis": "Canonical low-memory RoboTwin rendering/cameras and CuRobo coexist within 6 GB VRAM",
+      "minimum_runs": 30,
+      "pass": [
+        "no OOM or Vulkan device loss",
+        "GPU memory stabilizes after warmup",
+        "measured FPS and planning latency recorded"
+      ],
+      "evidence": ["nvidia_smi_csv", "fps_json", "planning_latency_json", "raw_log"]
+    },
+    {
+      "id": "B3",
+      "name": "mplib_fallback",
+      "requires": ["S1.1_PASS"],
+      "hypothesis": "MPlib 0.2.1 can solve the same fixed SE3 request and return a collision-cleared joint path",
+      "minimum_runs": 10,
+      "pass": [
+        "pinned/versioned package verified",
+        "IK and joint planning succeed on at least one feasible target",
+        "selected path passes current RoboTwin/SAPIEN collision recheck"
+      ],
+      "evidence": ["environment_export", "raw_log", "path_json", "collision_report_json"]
+    },
+    {
+      "id": "B4",
+      "name": "timing_and_splice",
+      "requires": ["B3_PASS_or_B1_PASS"],
+      "hypothesis": "Timed trajectories satisfy configured dynamic limits and replanning splice gates",
+      "minimum_runs": 20,
+      "pass": [
+        "velocity and acceleration within configured limits",
+        "jerk metric recorded and within configured gate after allowed dilation",
+        "splice position/velocity discontinuity within configured gate"
+      ],
+      "evidence": ["trajectory_json", "motion_metrics_json", "splice_metrics_json", "raw_log"]
+    },
+    {
+      "id": "B5",
+      "name": "geometry_first_6dof_grasp",
+      "requires": ["S1.1_PASS", "B1_PASS_or_B3_PASS"],
+      "hypothesis": "Geometry-first generator produces at least one feasible non-top-down full-6DoF grasp",
+      "minimum_runs": 20,
+      "pass": [
+        "multiple candidate poses generated",
+        "candidate provenance complete",
+        "at least one candidate passes IK and collision checks"
+      ],
+      "evidence": ["candidates_json", "rejection_histogram_json", "selected_grasp_json", "raw_log"]
+    },
+    {
+      "id": "B7",
+      "name": "receding_horizon_recovery",
+      "requires": ["B4_PASS", "B5_PASS"],
+      "hypothesis": "A stale short segment is rejected and replaced after a deterministic scene perturbation",
+      "minimum_runs": 20,
+      "pass": [
+        "scene revision change invalidates stale segment",
+        "new segment is collision-cleared before execution",
+        "detection and replan latency are recorded",
+        "no stale segment executes after invalidation"
+      ],
+      "evidence": ["state_machine_log_jsonl", "replan_metrics_json", "trajectory_artifacts", "raw_log"]
+    }
+  ]
+}
