@@ -1,0 +1,44 @@
+\documentclass[12pt]{article}
+
+% Report metadata: edit here only
+\newcommand{\coursename}{Báo cáo đồ án}
+\newcommand{\semester}{HK261}
+\newcommand{\reporttitle}{Phân loại vật thể sử dụng cánh tay robot và công nghệ Thị giác -- Ngôn ngữ -- Hành động (VLA)}
+\newcommand{\reportdate}{THÁNG 12/2026}
+
+\input{setup/packages}
+\input{setup/style}
+\input{setup/glossaries}
+
+\begin{document}
+
+\input{setup/titlepage}
+
+\input{chapters/00-abstract}
+\pagebreak
+
+\tableofcontents
+\pagebreak
+
+\printunsrtglossary[type={abbreviations}, title={Danh mục từ viết tắt}]
+\pagebreak
+
+\listoffigures
+\listoftables
+\pagebreak
+
+\input{chapters/01-introduction}
+\input{chapters/02-background}
+\input{chapters/03-hardware}
+\input{chapters/04-method}
+\input{chapters/05-experiments}
+\input{chapters/06-conclusion}
+
+\pagebreak
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\appendix
+\input{chapters/appendix-contributions}
+
+\end{document}
