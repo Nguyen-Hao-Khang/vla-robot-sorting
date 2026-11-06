@@ -1,0 +1,37 @@
+name: Task
+description: One work item from the project plan
+title: "<type>(<scope>): <summary>"
+body:
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone
+      placeholder: M1 Simulation data and VLA
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What needs to exist when this task is done.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Checkable completion criteria.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: input
+    id: requirement
+    attributes:
+      label: Topic requirement
+      description: Which of the five topic requirements this task serves (1 to 5).
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Dependencies, links, risks.
