@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Unit tests, offline scenarios, data processing, docs | Yes | Yes | — |
 | RoboTwin / SAPIEN simulation, digital twin, demo recording, policy evaluation in sim | **No** (WSL is not supported for this stack) | Yes | No |
-| Training SmolVLA / Evo-1 | Not recommended | Only with ≥ 16 GB VRAM | **Yes** |
+| Training SmolVLA / Evo-1 | With an NVIDIA GPU ≥ 16 GB (RTX 50-series needs PyTorch built for CUDA 12.8 or later) | With ≥ 16 GB VRAM | **Yes** |
 | Training ACT | With an NVIDIA GPU ≥ 4 GB | Yes | Yes |
 
 ## Windows (development and tests)
@@ -23,8 +23,7 @@ uv run ruff check .
 ```
 
 Expected result:
-- About 1,090 tests pass and 3 are skipped.
-- The tests in `test_native_depth_foreground_unittest.py` stop with an error unless `S1I_NATIVE_DIR` points to a native RGB-D capture. That error is expected.
+- About 1,090 tests pass. The tests in `test_native_depth_foreground_unittest.py` are skipped unless `S1I_NATIVE_DIR` points to a native RGB-D capture.
 
 Do not place the clone inside a OneDrive/Dropbox folder. Cloud sync can corrupt `.git`.
 

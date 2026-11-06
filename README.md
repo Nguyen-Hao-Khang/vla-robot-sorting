@@ -10,6 +10,7 @@ Team: Văn Quốc Huy, Nguyễn Hảo Khang, Phan Gia Phúc.
 2. [`docs/DECISIONS.md`](docs/DECISIONS.md): decision ledger.
 3. [`docs/SETUP.md`](docs/SETUP.md): what runs on Windows, Ubuntu or Kaggle, and how to set it up.
 4. [`docs/HISTORY.md`](docs/HISTORY.md): what Sprint 1 and the digital twin delivered.
+5. [`CONTRIBUTING.md`](CONTRIBUTING.md): branch, commit, code and review rules.
 
 ## Repository map
 
@@ -23,12 +24,9 @@ Team: Văn Quốc Huy, Nguyễn Hảo Khang, Phan Gia Phúc.
 | `configs/` | Pinned upstream versions, gates, camera presets |
 | `experiments/accepted/` | Accepted Sprint 1 evidence manifests |
 | `notebooks/` | Kaggle training notebook |
+| `report/` | Project report (LaTeX, Vietnamese) |
 | `docs/adr/`, `docs/architecture/`, `docs/research/` | Architecture decisions, interface notes, technical studies, VLA survey, literature register |
 
-## Working rules
+## License
 
-- Work on a branch and merge through a merge/pull request into `main`.
-- Code, comments and commit messages are in English.
-- Datasets, checkpoints and videos stay out of Git. Store them on Hugging Face Hub, in a Kaggle dataset, or on the shared drive.
-- Never loosen a safety threshold to obtain a pass.
-- Label simulator ground truth as such. It must never be reported as perception.
+Code is released under the [MIT License](LICENSE).

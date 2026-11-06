@@ -21,7 +21,7 @@ This ledger reconciles every earlier decision with [`PROJECT_STATE.md`](PROJECT_
 | V2-10 | Report: six chapters, one dedicated to hardware. Literature survey redone from scratch. No conference submission | PO choice |
 | V2-11 | Do not buy a camera before the robot arrives. Build the simulated scene to match the real table | PO choice |
 | V2-12 | VLA model choice is deferred to the PO survey (due T2) | PO choice |
-| V2-14 | (pending 2026-10-31) Choose the main VLA between SmolVLA and Evo-1 by a measured bake-off: fp16/fp32 inference on a GTX 1660 Ti, 1,000-step fine-tune on a Kaggle T4, Vietnamese tokenisation. ACT stays the no-language baseline | See `docs/research/v2-vla-model-survey.md` |
+| V2-14 | (pending, M0) Choose the main VLA between SmolVLA and Evo-1 by a measured bake-off: fp16/fp32 inference on a GTX 1660 Ti, 1,000-step fine-tune on a Kaggle T4, Vietnamese tokenisation. ACT stays the no-language baseline | See `docs/research/v2-vla-model-survey.md` |
 | V2-13 | The robustness defences against "it is just fine-tuning" are: a human-written held-out command set, an instruction-data strategy comparison, and a held-out category | PO choice |
 
 ## Week 1–2 decisions (D01–D28; there are no D07–D09)
