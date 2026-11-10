@@ -2,7 +2,7 @@
 
 ## 1. Nhiệm vụ
 
-Mỗi demo là một lần gắp–đặt: robot gắp một vật trên bàn và đặt vào một khay theo câu lệnh. Đặc tả nhiệm vụ nằm trong `docs/dac-ta-nhiem-vu.md`, gồm:
+Mỗi demo là một lần gắp–đặt: robot gắp một vật trên bàn và đặt vào một khay theo câu lệnh. Đặc tả nhiệm vụ nằm trong `docs/task-spec.md`, gồm:
 
 - danh sách vật, màu và hình dạng;
 - số khay và vị trí khay;
@@ -90,4 +90,4 @@ python tools/twin/policy_bridge.py serve --checkpoint <đường dẫn checkpoin
 python tools/twin/twin_console.py --executor policy --policy-server 127.0.0.1:5555 --level 2
 ```
 
-Cách đánh giá và báo cáo kết quả: [giao-thuc-danh-gia.md](giao-thuc-danh-gia.md).
+Cách đánh giá và báo cáo kết quả: [evaluation-protocol.md](evaluation-protocol.md).

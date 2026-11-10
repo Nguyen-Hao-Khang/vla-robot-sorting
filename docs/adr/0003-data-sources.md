@@ -27,4 +27,4 @@ Chọn phương án hai:
 
 - Thông tin ground truth chỉ dùng để sinh demo. Mô hình VLA chỉ nhận ảnh, câu lệnh và trạng thái khớp.
 - Câu lệnh kiểm tra do người viết, tách khỏi câu lệnh huấn luyện, để đo khả năng hiểu lệnh chưa thấy.
-- Chi tiết quy trình: `docs/du-lieu-va-huan-luyen.md`.
+- Chi tiết quy trình: `docs/data-and-training.md`.

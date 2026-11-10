@@ -10,7 +10,7 @@
 
 Đầu ra là chuỗi vị trí khớp mục tiêu. Hệ thống thực thi chuỗi này để gắp đúng vật và đặt vào đúng khay.
 
-Phạm vi phân loại: theo **màu** và **hình dạng** của vật ([đặc tả nhiệm vụ](dac-ta-nhiem-vu.md)). Phân loại theo nhóm ngữ nghĩa (ví dụ "đồ nhựa", "đồ ăn được") là phần mở rộng nếu còn thời gian.
+Phạm vi phân loại: theo **màu** và **hình dạng** của vật ([đặc tả nhiệm vụ](task-spec.md)). Phân loại theo nhóm ngữ nghĩa (ví dụ "đồ nhựa", "đồ ăn được") là phần mở rộng nếu còn thời gian.
 
 ## 2. Thành phần
 
@@ -35,7 +35,7 @@ Phạm vi phân loại: theo **màu** và **hình dạng** của vật ([đặc 
 
 | Thành phần | Vai trò | Vị trí trong repo |
 |---|---|---|
-| Mô hình VLA | Ánh xạ (ảnh, câu lệnh, trạng thái) → chuỗi hành động. Nhóm đang chọn giữa SmolVLA và Evo-1, xem [ADR 0005](adr/0005-lua-chon-mo-hinh-vla.md) | Huấn luyện bằng LeRobot; notebook trong `notebooks/` |
+| Mô hình VLA | Ánh xạ (ảnh, câu lệnh, trạng thái) → chuỗi hành động. Nhóm đang chọn giữa SmolVLA và Evo-1, xem [ADR 0005](adr/0005-vla-model-selection.md) | Huấn luyện bằng LeRobot; notebook trong `notebooks/` |
 | Lớp an toàn | Chặn lệnh vượt giới hạn trước khi gửi xuống robot | `src/vla_robot_sorting/safety/` |
 | Môi trường mô phỏng | Panthera-HT trong RoboTwin (SAPIEN, PhysX), cảnh bàn với vật và khay | `tools/twin/twin_scene.py`, `tools/twin/twin_console.py` |
 | Chuyên gia mô phỏng | Thực hiện thao tác gắp–đặt bằng lập kế hoạch chuyển động (CuRobo) và thông tin ground truth của simulator, dùng để sinh demo | `tools/twin/twin_console.py`, `twin_grasp.py`, `twin_kinematics.py`, `twin_obstacles.py` |
@@ -58,7 +58,7 @@ Phạm vi phân loại: theo **màu** và **hình dạng** của vật ([đặc 
 4. Nhóm tinh chỉnh mô hình VLA trên GPU đám mây hoặc GPU ≥ 16 GB.
 5. Khi robot thật sẵn sàng, nhóm thu thêm demo bằng điều khiển tay chủ–tay tớ (teleoperation) và tinh chỉnh tiếp trên dữ liệu kết hợp.
 
-Chi tiết: [du-lieu-va-huan-luyen.md](du-lieu-va-huan-luyen.md).
+Chi tiết: [data-and-training.md](data-and-training.md).
 
 ### 3.2 Suy luận
 

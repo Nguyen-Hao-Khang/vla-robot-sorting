@@ -16,7 +16,7 @@ Bản nháp. Nhóm chốt đặc tả này trước khi sinh dataset huấn luy�
 | Màu | đỏ, xanh lá, xanh dương, vàng |
 | Kích thước | cạnh 4–6 cm, vừa kẹp hai ngón |
 
-Hình tứ diện bị loại vì kẹp hai ngón gắp không ổn định (`docs/kien-truc-he-thong.md` mục 5).
+Hình tứ diện bị loại vì kẹp hai ngón gắp không ổn định (`docs/architecture.md` mục 5).
 
 ## 3. Câu lệnh
 

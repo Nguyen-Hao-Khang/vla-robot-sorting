@@ -22,5 +22,5 @@ Lớp an toàn cũng chạy trong mô phỏng để số lần chặn được �
 ## Hệ quả
 
 - Không ai được nới ngưỡng an toàn để một lần chạy qua được (CONTRIBUTING mục 5).
-- Mỗi thay đổi ở lớp an toàn cần test và review của một thành viên khác.
-- Số lần lớp an toàn chặn là một chỉ số đánh giá (`docs/giao-thuc-danh-gia.md`).
+- Mỗi thay đổi ở lớp an toàn phải có test cho trường hợp bị chặn.
+- Số lần lớp an toàn chặn là một chỉ số đánh giá (`docs/evaluation-protocol.md`).

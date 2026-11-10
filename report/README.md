@@ -28,7 +28,7 @@ Cần TeX Live hoặc MiKTeX có gói `vntex`. CI biên dịch báo cáo ở m�
 
 ## Phân công
 
-Mỗi chương có một người viết và một người review chéo. Phân công cụ thể ghi trong kế hoạch dự án (`docs/project-plan.md` và bảng kế hoạch). Người review kiểm tra:
+Mỗi chương có một người phụ trách, ghi trong kế hoạch dự án (`docs/project-plan.md`). Trước khi merge, người phụ trách tự kiểm tra:
 
 - mỗi khẳng định có trích dẫn hoặc số liệu đi kèm;
 - mỗi số liệu khớp với log gốc;

@@ -17,10 +17,10 @@ Nhóm cần sinh hàng trăm demo gắp–đặt và đánh giá mô hình hàng
 
 ## Quyết định
 
-Dùng Panthera-HT RoboTwin, cố định commit `2aee31ad`, CuRobo `v0.7.8`, SAPIEN `3.0.0b1` (xem `docs/cai-dat-moi-truong.md`).
+Dùng Panthera-HT RoboTwin, cố định commit `2aee31ad`, CuRobo `v0.7.8`, SAPIEN `3.0.0b1` (xem `docs/getting-started.md`).
 
 ## Hệ quả
 
 - Mô phỏng chỉ chạy trên máy Ubuntu có GPU NVIDIA. Các thành viên khác làm phần dữ liệu, huấn luyện và báo cáo trên Windows hoặc GPU đám mây.
 - Code dự án truy cập RoboTwin qua `tools/twin/`, không sửa mã nguồn RoboTwin.
-- Các giới hạn tầm với và vật cản của môi trường được ghi trong `docs/kien-truc-he-thong.md` mục 5.
+- Các giới hạn tầm với và vật cản của môi trường được ghi trong `docs/architecture.md` mục 5.
