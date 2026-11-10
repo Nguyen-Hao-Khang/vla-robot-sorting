@@ -40,7 +40,7 @@ class NativeDepthForegroundTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         path = os.environ.get("S1I_NATIVE_DIR")
         if not path:
-            raise RuntimeError("S1I_NATIVE_DIR must point to the source-locked native RGB-D capture")
+            raise unittest.SkipTest("S1I_NATIVE_DIR is not set; these tests need the source-locked native RGB-D capture")
         cls.root = Path(path).resolve(strict=True)
         for camera in ("head_camera", "wrist_camera"):
             _read_manifest(cls.root, camera)

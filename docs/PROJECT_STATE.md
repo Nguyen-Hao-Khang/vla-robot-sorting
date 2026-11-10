@@ -68,43 +68,41 @@ The data sources are combined:
 
 The datasets are stored in LeRobot format. Target size: 500–1,000 simulated demos and 30–50 real teleoperated demos.
 
-## 7. Schedule (deadline end of December 2026)
+## 7. Milestones (deadline end of December 2026)
 
-| Week | Dates | Engineering | Writing |
+The team plans by milestone. Each task is a GitHub issue attached to one milestone. The dates are targets.
+
+| ID | Milestone | Target | Exit criteria |
 |---|---|---|---|
-| T1+T2 | 27/10–2/11 | V2 cleanup; VLA bake-off and decision (31/10); E1 smoke on LIBERO; task spec; human-written command form; 20-demo pilot through the LeRobot pipeline; check RoboTwin code-gen with Panthera | 6-chapter skeleton; Ch.2 reading split |
-| (spare) | 3–9/11 | Buffer week gained by the acceleration: start T3 early | Ch.2 |
-| T3 | 10–16/11 | Generate demos + instructions; LeRobot dataset; collect human-written commands; fine-tune v0 | Ch.2, Ch.4 data |
-| T4 | 17–23/11 | E2, E3; robot arrives: install, SDK, safety layer, cameras | Ch.3 |
-| T5 | 24–30/11 | E4, E5; calibration, teleop. **Go/no-go 30/11** | Ch.4 |
-| T6 | 1–7/12 | 30–50 real demos, sim + real fine-tune | Ch.1 |
-| T7 | 8–14/12 | E6 on the real robot | Ch.5 sim |
-| T8 | 15–21/12 | E7 if time allows; freeze results | Ch.5, Ch.6 |
-| T9 | 22–31/12 | No new experiments | Final report |
+| M0 | Project setup and model choice | 13/11 | Members onboarded; CI green; VLA chosen by bake-off (V2-14); task spec merged; 20-demo pilot runs through recording, LeRobot conversion, fine-tuning and evaluation in the twin |
+| M1 | Simulation data and VLA, attribute level | 27/11 | 500 to 1,000 simulated demos; fine-tuned VLA and ACT baseline; E2 attribute-level success rates with Wilson 95% intervals |
+| M2 | Hardware bring-up and robot go/no-go | 30/11 | Robot runs through its SDK; safety layer blocks out-of-workspace commands; cameras calibrated; teleoperation records demos |
+| M3 | VLA on the real robot | 11/12 | 30 to 50 real demos; sim + real fine-tune; the policy completes sorting runs on the physical arm through the safety layer |
+| M4 | Experiments complete | 20/12 | E6 on the real robot with at least 30 trials per condition; E3 and the human-written command set if in scope; results frozen and traceable |
+| M5 | Report submitted | 31/12 | Report in `report/` complete and cross-checked against evidence; release `v1.0` tagged |
 
-**Go/no-go on 30/11.** All four conditions must hold:
+**Scope priority.**
 
-- the robot runs through its SDK;
-- the safety layer blocks out-of-workspace commands;
-- the cameras are calibrated;
-- teleoperation records demos.
+- **Must:** a fine-tuned VLA sorting by attribute (colour, shape) from Vietnamese and English commands, in simulation and on the real arm, with at least 30 trials per condition, the safety layer, the hardware chapter and the full report. This covers all five topic requirements.
+- **Should:** semantic-category sorting, the human-written command set, the ACT baseline, and E3.
+- **Could:** the VLM + VLA variant (E4, E5) and OOD tests (E7).
 
-If any condition fails, inform the advisor immediately, reduce E6 to a qualitative demo, and record the change as a limitation.
+**If M2 fails** (robot not ready on 30/11), inform the advisor immediately. The team then moves effort to Should and Could items in simulation, reduces E6 to a qualitative demo, and records the change as a limitation.
 
 ## 8. Report
 
-The report has six chapters:
+The report lives in `report/` (LaTeX, Vietnamese) and follows the structure of a research paper:
 
 1. Introduction
-2. Background and related work — the literature survey is redone from scratch, and every citation is checked against the original.
+2. Background and related work. The literature survey is redone from scratch, and the team checks every citation against the original.
 3. Hardware: Panthera-HT, control path, cameras and calibration, safety
 4. Method
 5. Experiments
 6. Discussion and conclusion
 
-It is a course project that continues into the graduation thesis, written to the standard of a research paper. No conference submission is planned.
+This semester's work is a course project that continues into the graduation thesis. No conference submission is planned.
 
 ## 9. Open items
 
-- **VLA model choice.** SmolVLA vs Evo-1 bake-off, decision due 2026-10-31 (V2-14). See `docs/research/v2-vla-model-survey.md`.
+- **VLA model choice.** SmolVLA vs Evo-1 bake-off, decided in M0 (V2-14). See `docs/research/v2-vla-model-survey.md`.
 - **TinyVLA language encoder.** The TA described it as ModernBERT, but the paper (arXiv 2409.12514) describes Pythia-based VLMs. Confirm with the TA.

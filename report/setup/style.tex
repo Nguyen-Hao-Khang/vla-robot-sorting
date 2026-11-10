@@ -1,0 +1,185 @@
+\DeclareMathOperator{\arccot}{arccot}
+\captionsetup[table]{name=Bảng}
+\captionsetup[figure]{name=Hình}
+\newenvironment{Description}{\list{}{%
+    \let\makelabel\descriptionlabel
+    \setlength{\rightmargin}{\leftmargin}
+    \setlength{\labelwidth}{0pt}
+    }}{\endlist}
+    
+\usepackage{parskip}
+\setlength{\parskip}{1em}
+\setlength{\parindent}{20pt}
+
+% Declare colors
+\definecolor{backcolour}{HTML}{F9F9F9}
+\definecolor{headerblue}{HTML}{E8F2FF}
+\definecolor{framegray}{HTML}{D1D1D1}
+\definecolor{commentgreen}{HTML}{008855}
+\definecolor{keywordblue}{HTML}{0000FF}
+\definecolor{stringorange}{HTML}{BD5500}
+\definecolor{typepurple}{HTML}{770088}
+\definecolor{numbergreen}{HTML}{116644}
+\definecolor{constblue}{HTML}{3300AA}
+\definecolor{terminalwhite}{HTML}{000000}
+
+% General config listings
+\lstset{
+    backgroundcolor=\color{backcolour},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=10pt,
+    numberstyle=\tiny\color{gray},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,           
+    rulecolor=\color{framegray},
+    fillcolor=\color{backcolour},
+    xleftmargin=20pt,
+    framexleftmargin=15pt,
+    aboveskip=0pt,
+    belowskip=10pt
+}
+
+% Custom header style
+\newcommand{\codeheader}[2]{
+    \vspace{10pt}
+    \noindent
+    \hspace{-1.0pt}
+    \parbox{\linewidth}{
+        \colorbox{headerblue}{
+            \parbox{\dimexpr\linewidth-4\fboxsep}{
+                \vspace{3pt} \hspace{10pt} 
+                \small\bfseries\ttfamily #1 \hfill \textit{#2} 
+                \hspace{10pt} \vspace{3pt}
+            }
+        }
+    }
+    \par\offinterlineskip
+    \vspace{5pt}
+}
+
+% Style for C/C++
+\lstdefinestyle{cppstyle}{
+    language=C++,
+    commentstyle=\color{commentgreen},
+    keywordstyle=\color{keywordblue}\bfseries,
+    stringstyle=\color{stringorange},
+    morekeywords={u_int8_t, u_int16_t, u_int32_t, SemaphoreHandle_t, TaskHandle_t},
+    keywordstyle=[2]\color{typepurple},
+    identifierstyle=\color{black},
+}
+
+% Style for Python
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    commentstyle=\color{commentgreen}\itshape,
+    keywordstyle=\color{keywordblue}\bfseries,
+    stringstyle=\color{stringorange},
+    identifierstyle=\color{black},
+    emph={self, cls},
+    emphstyle=\color{typepurple}\itshape
+}
+
+% Style for Terminal/Log
+\lstdefinestyle{termstyle}{
+    language={},
+    basicstyle=\ttfamily\small\color{terminalwhite},
+    numbers=none,
+    backgroundcolor=\color{backcolour},
+    frame=single,
+    rulecolor=\color{framegray},
+}
+
+\usepackage{caption}
+\captionsetup[lstlisting]{
+    format=plain,
+    singlelinecheck=false,
+    justification=centering,
+    font=small,
+    skip=10pt
+}
+
+\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true} 
+\usetikzlibrary{arrows,decorations.pathmorphing,backgrounds}
+\definecolor{mathblue}{RGB}{0,114,188}
+
+\newtheorem{theorem}{{\bf Định lý}}
+\newtheorem{property}{{\bf Tính chất}}
+\newtheorem{proposition}{{\bf Mệnh đề}}
+\newtheorem{corollary}[proposition]{{\bf Hệ quả}}
+\newtheorem{lemma}[proposition]{{\bf Bổ đề}}
+
+\AtBeginDocument{\renewcommand{\listfigurename}{Danh sách hình vẽ}}
+\AtBeginDocument{\renewcommand{\listtablename}{Danh sách bảng}}
+\AtBeginDocument{\renewcommand*\contentsname{Mục lục}}
+\AtBeginDocument{\renewcommand*\refname{Tài liệu tham khảo}}
+
+\titleformat{\section}
+  {\normalfont\LARGE\bfseries\color{black}}
+  {\thesection.}
+  {1em}
+  {}
+
+\titleformat{\subsection}
+  {\normalfont\Large\bfseries}
+  {\thesubsection.}
+  {1em}
+  {}
+
+\titleformat{\subsubsection}
+  {\normalfont\large\bfseries}
+  {\thesubsubsection.}
+  {1em}
+  {}
+
+\setlength{\headheight}{40pt}
+\pagestyle{fancy}
+\fancyhead{} 
+\fancyhead[L]{
+ \begin{tabular}{rl}
+    \begin{picture}(25,15)(0,0)
+    \put(0,-8){\includegraphics[width=8mm, height=8mm]{hcmut.png}}
+   \end{picture}&
+    \begin{tabular}{l}
+        \textbf{\bf \ttfamily Trường Đại học Bách khoa - ĐHQG-HCM}\\
+        \textbf{\bf \ttfamily Khoa Khoa học và Kỹ thuật Máy tính}
+        \vspace{0.1cm}
+    \end{tabular}     
+ \end{tabular}
+}
+\fancyhead[R]{
+    \begin{tabular}{l}
+        \tiny \bf \\
+        \tiny \bf 
+    \end{tabular}  }
+\fancyfoot{} 
+\fancyfoot[L]{\scriptsize \ttfamily \coursename{} - \semester}
+\fancyfoot[R]{\scriptsize \ttfamily Trang {\thepage}/\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\makeatletter
+\newcounter {subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection .\@alph\c@subsubsubsection}
+\newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\bfseries}}
+\newcommand*\l@subsubsubsection{\@dottedtocline{3}{10.0em}{4.1em}}
+\newcommand*{\subsubsubsectionmark}[1]{}
+\makeatother
+
+\usepackage{tocloft}
+\setlength{\cftbeforesecskip}{0.3em}
+\setlength{\cftbeforesubsecskip}{0.2em}
+\setlength{\cftbeforesubsubsecskip}{0.1em}
