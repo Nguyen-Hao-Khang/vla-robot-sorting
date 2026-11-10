@@ -29,9 +29,9 @@ dev = [
 packages = ["src/vla_robot_sorting"]
 
 [tool.pytest.ini_options]
-pythonpath = [".", "legacy/sprint1"]
+pythonpath = ["."]
 addopts = "-ra --strict-markers --import-mode=importlib"
-testpaths = ["tests", "legacy/sprint1/tests"]
+testpaths = ["tests"]
 markers = [
   "integration: tests requiring multiple project components",
   "simulator: tests requiring a simulator/runtime not guaranteed on Windows",
