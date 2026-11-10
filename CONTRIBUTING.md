@@ -76,7 +76,7 @@ Quy tắc:
   - Đúng: `feat(data): add randomized scene generator`
   - Sai: `update`, `fix bug`, `WIP`, `Khang/repo conventions (#2)`
 - `body` giải thích lý do thay đổi. Phần diff đã cho thấy nội dung thay đổi.
-- Tiêu đề pull request theo đúng mẫu trên. Khi squash merge, tiêu đề này trở thành commit trên `main`. CI kiểm tra định dạng tiêu đề.
+- Tiêu đề pull request theo đúng mẫu trên. Khi squash merge, tiêu đề này trở thành commit trên `main`.
 
 ## 5. Quy tắc code
 
