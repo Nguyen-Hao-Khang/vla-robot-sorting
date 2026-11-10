@@ -1,11 +1,55 @@
 \section{Cơ sở lý thuyết và công trình liên quan}
 \label{sec:background}
 
+% Độ dài mục tiêu: 8--10 trang.
+% Quy tắc: chỉ trích dẫn tài liệu đã đọc bản gốc, có DOI hoặc arXiv (report/README.md).
+% Danh sách "Đọc" dưới mỗi mục là gợi ý. Người viết kiểm tra mã arXiv trên arxiv.org
+% trước khi thêm vào references.bib.
+
 \subsection{Cánh tay robot, động học và lập kế hoạch chuyển động}
-\subsection{Học bắt chước và mô hình VLA}
-\subsection{Mô hình VLA nhỏ và kỹ thuật tinh chỉnh hiệu quả}
-\subsection{Sinh dữ liệu tự động trong mô phỏng}
-\subsection{Lệnh đa ngôn ngữ trong VLA}
+% - Động học thuận, động học ngược, không gian khớp và không gian Descartes.
+% - Lập kế hoạch chuyển động tránh va chạm; CuRobo dùng làm chuyên gia sinh demo.
+% Đọc: Lynch & Park, Modern Robotics (sách); cuRobo (arXiv:2310.17274).
+
+\subsection{Học bắt chước}
+% - Bài toán học policy pi(a | o) từ demo; behavior cloning; lỗi tích lũy.
+% - Dự đoán chuỗi hành động (action chunking) và head sinh hành động
+%   (diffusion, flow matching).
+% Đọc: ACT/ALOHA (arXiv:2304.13705); Diffusion Policy (arXiv:2303.04137).
+
+\subsection{Mô hình Vision-Language-Action}
+% - Định nghĩa VLA; cấu trúc chung: bộ mã hóa ảnh + mô hình ngôn ngữ + head hành động.
+% - Các mô hình tiêu biểu và quy mô:
+%   RT-1 (arXiv:2212.06817), RT-2 (arXiv:2307.15818), Octo (arXiv:2405.12213),
+%   OpenVLA (arXiv:2406.09246), pi0 (arXiv:2410.24164).
+% - Dữ liệu huấn luyện quy mô lớn: Open X-Embodiment (arXiv:2310.08864).
+% - Khảo sát: \cite{ma2024survey,sapkota2025vla}.
+
+\subsection{Mô hình VLA nhỏ}
+% - Động lực: suy luận trên GPU phổ thông, tinh chỉnh nhanh.
+% - TinyVLA \cite{wen2025tinyvla}; SmolVLA (arXiv:2506.01844); Evo-1 (tra mã arXiv).
+% - Bảng so sánh: số tham số, mô hình ngôn ngữ nền, dữ liệu tiền huấn luyện, VRAM.
+%   Bảng này là cơ sở cho ADR 0005 và mục chọn mô hình ở Chương 4.
+
+\subsection{Sinh dữ liệu trong mô phỏng}
+% - Mô phỏng làm nguồn demo: chuyên gia có thông tin đặc quyền (vị trí vật thật).
+% - RoboTwin (arXiv:2409.02920), RoboTwin 2.0 (arXiv:2506.18088);
+%   benchmark LIBERO (arXiv:2306.03310).
+% - Dùng mô hình ngôn ngữ lớn để đa dạng hóa câu lệnh.
+
+\subsection{Câu lệnh đa ngôn ngữ}
+% - Phần lớn dataset robot chỉ có tiếng Anh.
+% - Mô hình ngôn ngữ nền đa ngôn ngữ (ví dụ Qwen2.5) và ảnh hưởng tới lệnh tiếng Việt.
+% - Nêu rõ nếu chưa có công trình đánh giá VLA với lệnh tiếng Việt: đây là khoảng trống
+%   đề tài nhắm tới. Chỉ khẳng định sau khi đã tìm kiếm có hệ thống
+%   (ghi từ khóa và cơ sở dữ liệu đã tìm).
+
 \subsection{Chuyển giao từ mô phỏng sang thực tế}
+% - Khoảng cách mô phỏng--thực tế: hình ảnh, vật lý, hiệu chuẩn camera.
+% - Ngẫu nhiên hóa miền (domain randomization, arXiv:1703.06907); đồng huấn luyện
+%   dữ liệu mô phỏng và dữ liệu thật.
+
 \subsection{Định vị đề tài}
-% Bảng so sánh đề tài với các công trình gần nhất.
+% Bảng so sánh đề tài với 4--6 công trình gần nhất theo các cột:
+% robot | kích thước mô hình | nguồn dữ liệu | ngôn ngữ lệnh | có thử robot thật | GPU suy luận.
+% Kết thúc bằng 2--3 câu nêu điểm khác của đề tài.

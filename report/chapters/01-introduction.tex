@@ -1,16 +1,63 @@
 \section{Giới thiệu}
 \label{sec:introduction}
 
+% Độ dài mục tiêu: 3--4 trang. Mỗi khẳng định về hiện trạng lĩnh vực cần trích dẫn.
+
 \subsection{Bối cảnh}
-% Vì sao phân loại vật thể bằng lệnh ngôn ngữ tự nhiên; vai trò của VLA.
+% - Nhu cầu: phân loại vật trong kho, dây chuyền, phòng thí nghiệm; người vận hành
+%   muốn ra lệnh bằng ngôn ngữ tự nhiên thay vì lập trình lại robot.
+% - Cách làm truyền thống: pipeline tri giác -> lập kế hoạch -> điều khiển, mỗi thay
+%   đổi nhiệm vụ cần sửa code hoặc gán nhãn lại.
+% - Mô hình Vision-Language-Action (VLA): một mạng nhận ảnh và câu lệnh, xuất hành
+%   động; tận dụng tri thức của mô hình thị giác--ngôn ngữ đã tiền huấn luyện.
+%   Trích dẫn khảo sát \cite{ma2024survey,sapkota2025vla}.
+% - Các VLA lớn (hàng tỉ tham số) cần GPU mạnh; các VLA nhỏ \cite{wen2025tinyvla}
+%   mở ra khả năng chạy cục bộ trên phần cứng phổ thông.
 
 \subsection{Phát biểu bài toán}
-% Đầu vào, đầu ra, ràng buộc (GPU 6 GB khi chạy, ít dữ liệu thật, lệnh tiếng Việt).
+% Viết dưới dạng định nghĩa, khớp docs/dac-ta-nhiem-vu.md:
+% - Đầu vào tại mỗi bước t: ảnh camera cổ tay, ảnh camera tổng quan, trạng thái khớp
+%   q_t (6 khớp + kẹp), câu lệnh l (tiếng Việt hoặc tiếng Anh).
+% - Đầu ra: chuỗi vị trí khớp mục tiêu a_{t:t+H}.
+% - Nhiệm vụ: gắp vật được chỉ định theo màu và/hoặc hình dạng, đặt vào khay được chỉ định.
+% - Ràng buộc:
+%   (1) suy luận trên GPU 6 GB;
+%   (2) ít dữ liệu thật (30--50 demo);
+%   (3) câu lệnh tiếng Việt, ngôn ngữ ít xuất hiện trong dữ liệu robot công khai;
+%   (4) robot thật phải vận hành an toàn.
+
+\subsection{Mục tiêu và yêu cầu của đề tài}
+% Liệt kê 5 yêu cầu đề tài và mục báo cáo đáp ứng từng yêu cầu (bảng 2 cột):
+% 1. Tổng quan VLA, mô hình nền tảng, cơ chế ánh xạ lệnh -> hành động  -> Chương 2
+% 2. Phần cứng, giao thức điều khiển, hệ thu ảnh                        -> Chương 3
+% 3. Triển khai và tinh chỉnh VLA cho nhận diện, định vị, gắp--đặt      -> Chương 4
+% 4. Ứng dụng phân loại hoàn chỉnh trên cánh tay robot                  -> Chương 4, 5
+% 5. Đánh giá nhận diện, hiểu ngôn ngữ, độ tin cậy thao tác             -> Chương 5
 
 \subsection{Câu hỏi nghiên cứu}
-% RQ1--RQ5 theo docs/PROJECT_STATE.md.
+% Mỗi câu hỏi ứng với một thí nghiệm trong docs/giao-thuc-danh-gia.md:
+% - CH1: Một VLA nhỏ tinh chỉnh trên dữ liệu sinh tự động trong mô phỏng đạt tỉ lệ
+%   thành công bao nhiêu khi phân loại theo màu và hình dạng, với lệnh tiếng Việt và
+%   tiếng Anh?
+% - CH2: Tỉ lệ đó thay đổi thế nào giữa câu lệnh có trong dữ liệu huấn luyện và câu
+%   lệnh do người viết, chưa từng thấy?
+% - CH3: So với mô hình đối chứng không dùng ngôn ngữ (ACT), thông tin từ câu lệnh
+%   giúp chọn đúng vật thêm bao nhiêu?
+% - CH4: Khi chuyển sang robot thật, mô hình giữ được bao nhiêu hiệu năng khi huấn
+%   luyện chỉ bằng dữ liệu mô phỏng, chỉ bằng dữ liệu thật, và kết hợp cả hai?
 
 \subsection{Đóng góp}
-% Liệt kê đóng góp, mỗi đóng góp gắn với một kết quả ở Mục~\ref{sec:experiments}.
+% Viết sau khi có kết quả. Mỗi đóng góp gắn với một mục ở Chương 5. Dự kiến:
+% - Quy trình sinh dữ liệu cho Panthera-HT trong RoboTwin: chuyên gia mô phỏng +
+%   câu lệnh song ngữ do mô hình ngôn ngữ sinh.
+% - Dataset song ngữ Việt--Anh cho nhiệm vụ phân loại, công bố định dạng LeRobot.
+% - Đánh giá định lượng một VLA nhỏ trong mô phỏng và trên robot thật, có khoảng
+%   tin cậy và phân tích lỗi theo pha.
+
+\subsection{Phạm vi và giới hạn}
+% - Trong phạm vi: phân loại theo màu và hình dạng; 3 khay; 2--4 vật mỗi cảnh.
+% - Ngoài phạm vi: phân loại theo nhóm ngữ nghĩa (chỉ làm nếu còn thời gian), vật
+%   biến dạng, vật xếp chồng, lệnh nhiều bước.
 
 \subsection{Cấu trúc báo cáo}
+% Một câu cho mỗi chương 2--6.
