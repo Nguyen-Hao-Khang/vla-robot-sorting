@@ -4,9 +4,9 @@
 
 1. Mỗi đầu việc trong [kế hoạch](docs/project-plan.md) có một issue. Gán issue cho mình trước khi làm.
 2. Tạo nhánh từ `main`: `git switch -c <ten>/<viec>`, ví dụ `khang/scene-randomizer`, `phuc/chapter-2`.
-3. Mở pull request vào `main`, ghi `Closes #<số issue>`. Một thành viên khác review rồi bấm **Squash and merge**.
+3. Mở pull request vào `main`, ghi `Closes #<số issue>`. Tự kiểm tra thay đổi của mình. Khi CI xanh, tự bấm **Squash and merge**, không cần chờ người khác duyệt.
 
-Không push thẳng lên `main`. CI phải qua trước khi merge.
+Không push thẳng lên `main`.
 
 ## Commit và tiêu đề pull request
 
