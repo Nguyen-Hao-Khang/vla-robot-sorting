@@ -1,6 +1,10 @@
 # Giai đoạn 1: pipeline mô-đun (tháng 9–10/2026)
 
-Thư mục này lưu mã nguồn, cấu hình và bằng chứng thực nghiệm của giai đoạn đầu dự án. Nhóm không phát triển tiếp phần này. Mã được giữ để tham khảo và để các test cũ vẫn chạy trong CI.
+Thư mục này lưu mã nguồn, cấu hình và bằng chứng thực nghiệm của giai đoạn đầu dự án. Nhóm không phát triển tiếp phần này. Mã được giữ để tham khảo. CI không chạy test của thư mục này. Để chạy thủ công:
+
+```bash
+uv run pytest legacy/sprint1/tests -o pythonpath=". legacy/sprint1"
+```
 
 ## Nội dung
 
