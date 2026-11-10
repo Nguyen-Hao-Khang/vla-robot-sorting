@@ -121,6 +121,6 @@ def test_look_alike_textures_differ() -> None:
     )
 
 
-def test_unknown_designs_rejected() -> None:
+def test_unknown_designs_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
-        ta.write_asset("teapot", "x", (0.1,), Path("/nonexistent"))
+        ta.write_asset("teapot", "x", (0.1,), tmp_path)
