@@ -24,7 +24,7 @@ uv run pytest
 Kết quả mong đợi:
 
 - Ruff báo `All checks passed!`.
-- Khoảng 1.090 test chạy qua.
+- Khoảng 590 test chạy qua.
 - Khoảng 20 test được bỏ qua: các test này cần dữ liệu camera thu từ mô phỏng (biến môi trường `S1I_NATIVE_DIR`) hoặc mã nguồn RoboTwin.
 
 Trên Windows, `tools/setup/bootstrap_windows.ps1` chạy toàn bộ các bước trên. `tools/setup/check_windows_env.ps1` in phiên bản Git, Python, uv và GPU để kiểm tra nhanh.
