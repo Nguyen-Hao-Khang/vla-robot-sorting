@@ -11,11 +11,11 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "scripts/linux"))
+sys.path.insert(0, str(ROOT / "tools/twin"))
 
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / f"scripts/linux/{name}.py")
+    spec = importlib.util.spec_from_file_location(name, ROOT / f"tools/twin/{name}.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)

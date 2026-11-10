@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("twin_models", ROOT / "scripts/linux/twin_models.py")
+spec = importlib.util.spec_from_file_location("twin_models", ROOT / "tools/twin/twin_models.py")
 tm = importlib.util.module_from_spec(spec)
 sys.modules["twin_models"] = tm
 spec.loader.exec_module(tm)

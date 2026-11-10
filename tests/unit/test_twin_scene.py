@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("twin_scene", ROOT / "scripts/linux/twin_scene.py")
+spec = importlib.util.spec_from_file_location("twin_scene", ROOT / "tools/twin/twin_scene.py")
 ts = importlib.util.module_from_spec(spec)
 sys.modules["twin_scene"] = ts
 spec.loader.exec_module(ts)

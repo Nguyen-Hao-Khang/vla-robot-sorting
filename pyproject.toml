@@ -8,21 +8,18 @@ version = "0.1.0"
 description = "Panthera-HT VLA object-sorting research and simulation stack"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
-license = { text = "UNLICENSED" }
+license = { text = "MIT" }
 authors = [
   { name = "Nguyen Hao Khang" }
 ]
 dependencies = []
 
-[project.optional-dependencies]
-native-camera-replay = [
-  "h5py>=3.11,<4",
-  "numpy>=1.26,<3",
-  "Pillow>=10,<13",
-]
-
 [dependency-groups]
 dev = [
+  "h5py>=3.11,<4",
+  "numpy>=1.26,<3",
+  "opencv-python-headless>=4.9,<5",
+  "Pillow>=10,<13",
   "pytest>=8.3,<9",
   "pytest-cov>=6,<7",
   "ruff>=0.12,<1",
@@ -33,7 +30,7 @@ packages = ["src/vla_robot_sorting"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --import-mode=importlib"
 testpaths = ["tests"]
 markers = [
   "integration: tests requiring multiple project components",

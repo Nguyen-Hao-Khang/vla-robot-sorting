@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "scripts/linux"))
-spec = importlib.util.spec_from_file_location("twin_assets", ROOT / "scripts/linux/twin_assets.py")
+sys.path.insert(0, str(ROOT / "tools/twin"))
+spec = importlib.util.spec_from_file_location("twin_assets", ROOT / "tools/twin/twin_assets.py")
 ta = importlib.util.module_from_spec(spec)
 sys.modules["twin_assets"] = ta
 spec.loader.exec_module(ta)
@@ -121,6 +121,6 @@ def test_look_alike_textures_differ() -> None:
     )
 
 
-def test_unknown_designs_rejected() -> None:
+def test_unknown_designs_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
-        ta.write_asset("teapot", "x", (0.1,), Path("/nonexistent"))
+        ta.write_asset("teapot", "x", (0.1,), tmp_path)

@@ -19,8 +19,8 @@ def _load(name: str, rel: str):
     return module
 
 
-view = _load("twin_view", "scripts/linux/twin_view.py")
-gem = _load("gemini_command_smoke", "scripts/linux/gemini_command_smoke.py")
+view = _load("twin_view", "tools/twin/twin_view.py")
+gem = _load("gemini_command_smoke", "tools/twin/gemini_command_smoke.py")
 
 
 def test_twin_view_defaults_and_guards() -> None:

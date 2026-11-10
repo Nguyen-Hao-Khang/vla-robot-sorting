@@ -1,81 +1,96 @@
-# Contributing
+# Đóng góp
 
-These rules apply to all three team members.
+Tài liệu này quy định cách nhóm đặt tên nhánh, viết commit, viết comment và mở pull request cho dự án.
 
-## Workflow
+## 1. Ngôn ngữ
 
-1. Pick or create an issue on the project board. Each task in the project plan maps to one issue.
-2. Create a branch from the latest `main`:
+| Thành phần | Ngôn ngữ |
+|---|---|
+| Tài liệu (`README`, `docs/`), báo cáo (`report/`), nội dung issue và pull request | Tiếng Việt |
+| Tên biến, hàm, lớp, comment, docstring, log, commit, tên nhánh, tiêu đề issue và pull request | Tiếng Anh |
 
-   ```bash
-   git switch main && git pull
-   git switch -c <name>/<task>
-   ```
+## 2. Nhánh
 
-   Branch names use lowercase and hyphens: `<name>` is the author's first name and `<task>` is a short description.
-   Examples: `khang/scene-randomizer`, `huy/smolvla-bakeoff`, `phuc/task-spec`.
-3. Commit in small, complete steps. Each commit must leave tests and lint passing.
-4. Push the branch and open a pull request into `main`. Write `Closes #<issue>` in the description.
-5. Another member reviews the pull request. Authors do not merge their own pull requests.
-6. Merge with **Squash and merge**. GitHub deletes the branch after the merge.
+`main` luôn qua được lint và test. Mỗi việc làm trên một nhánh ngắn hạn và vào `main` qua pull request. Không push thẳng lên `main`.
 
-Nobody pushes directly to `main`.
+Tên nhánh: `<người-phụ-trách>/<việc>`
 
-## Commit messages
+| Phần | Quy tắc |
+|---|---|
+| `người-phụ-trách` | Tên định danh của thành viên chịu trách nhiệm: `khangnh`, `huyvq`, `phucpg` |
+| `việc` | 2 đến 5 từ tiếng Anh viết thường, nối bằng dấu gạch ngang, chỉ ký tự ASCII |
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
+Ví dụ: `khangnh/scene-randomizer`, `huyvq/smolvla-benchmark`, `phucpg/chapter-2-background`.
+
+## 3. Commit
+
+Commit theo [Conventional Commits](https://www.conventionalcommits.org/), viết bằng tiếng Anh:
 
 ```
 <type>(<scope>): <summary>
 
-<optional body: what changed and why>
+<body: what and why, wrapped at 72 columns>
 
-Refs #<issue>
+Refs: #<issue>
 ```
 
-| Type | Use for |
+- `summary`: thể mệnh lệnh, chữ thường, không dấu chấm cuối, tối đa 50 ký tự.
+- `body`: tùy chọn, giải thích lý do thay đổi thay vì kể lại diff.
+- Mỗi commit chứa một thay đổi logic. Lint và test phải qua sau mỗi commit.
+
+| `type` | Dùng khi |
 |---|---|
-| `feat` | New capability |
-| `fix` | Bug fix |
-| `docs` | Documentation or report text |
-| `test` | Tests only |
-| `refactor` | Code change with no behaviour change |
-| `exp` | Experiment configs, evaluation runs, result tables |
-| `chore` | Tooling, dependencies, repository settings |
+| `feat` | Thêm tính năng |
+| `fix` | Sửa lỗi |
+| `test` | Thêm hoặc sửa test |
+| `docs` | Tài liệu hoặc nội dung báo cáo |
+| `exp` | Cấu hình thí nghiệm, kết quả đánh giá, bảng số liệu |
+| `build` | Thư viện phụ thuộc, CI, công cụ |
+| `refactor` | Đổi cấu trúc mã, không đổi hành vi |
 
-Scopes: `sim`, `twin`, `data`, `train`, `eval`, `robot`, `safety`, `perception`, `semantics`, `report`, `docs`, `ci`.
+Scope thường dùng: `sim`, `data`, `train`, `eval`, `robot`, `safety`, `report`.
 
-Rules:
-- Write the summary in English, imperative mood, lowercase, under 72 characters, with no trailing period.
-  - Good: `feat(data): add randomized scene generator`.
-  - Avoid: `Update files`, `fix bug`, `WIP`.
-- Use the body to explain why. The diff already shows what changed.
-- The squash commit on `main` keeps the pull request title, so the PR title follows the same format.
+Ví dụ:
 
-## Code
+```
+feat(data): randomize object layout per episode
+fix(sim): add table objects to curobo world
+exp(eval): add smolvla simulation results
+docs(report): draft related work on small vlas
+```
 
-- **Language.** Code, comments, identifiers, logs and commit messages are in English. The report in `report/` is in Vietnamese.
-- **Python.** Use Python 3.10 to 3.12. Format and lint with `ruff` (line length 100). Run `uv run ruff check .` and `uv run pytest` before you push.
-- **Tests.** Add or update tests with every behaviour change. Tests must run without a simulator, a GPU or network access.
-- **Interfaces.** Third-party libraries stay behind the contracts in `src/vla_robot_sorting/contracts` (see ADR-0001).
-- **Safety.** Never loosen a safety limit to make a run pass.
-- **Ground truth.** Label simulator ground truth as ground truth. Never report it as perception.
+## 4. Mã nguồn
 
-## What does not go into the repository
+- Định dạng và lint bằng `ruff` (độ dài dòng 100).
+- Comment và docstring viết tiếng Anh, ngắn, nêu ý định hoặc ràng buộc thay vì lặp lại mã.
+- Thay đổi hành vi thì thêm test. Test không được cần GPU, mô phỏng hay mạng; phần cần phần cứng đánh dấu `@pytest.mark.simulator` hoặc `@pytest.mark.network`.
+- Không nới ngưỡng an toàn để một lần chạy qua được.
+- Không ghi đường dẫn tuyệt đối của máy cá nhân. Dùng tham số dòng lệnh hoặc biến môi trường.
+- Việc dự định làm: `TODO(<scope>): <action>`.
 
-- API keys, tokens and `.env` files. Keys live in environment variables only.
-- Datasets, checkpoints, videos and training outputs. Store them on Hugging Face Hub or Kaggle and put the link in the pull request.
-- Personal notes, meeting chat logs and drafts unrelated to the code or report.
-- Generated files: LaTeX build output, `__pycache__`, notebook outputs.
+## 5. Pull request
 
-## Results
+Trước khi mở pull request, chạy:
 
-A result goes into the report only if the repository can trace it to:
+```sh
+uv run ruff check .
+uv run pytest
+```
 
-- the commit that produced it;
-- the config and seed;
-- the raw log or evaluation file, stored outside Git and linked from the pull request.
+Quy trình:
 
-## Report
+1. Cập nhật `main` và tạo nhánh mới từ đó.
+2. Commit theo mục 3, push nhánh lên GitHub.
+3. Mở pull request vào `main`. Mô tả nêu việc đã làm, cách kiểm tra, ghi `Closes #<số issue>`.
+4. Tự kiểm tra thay đổi của mình. Khi CI xanh, tự bấm **Squash and merge**. Không cần chờ người khác duyệt.
+5. GitHub tự xóa nhánh sau khi merge.
 
-The report lives in `report/` (LaTeX, Vietnamese). Build it with `latexmk -pdf main.tex` inside `report/`. Commit only `.tex`, `.bib` and figure sources, never the PDF.
+## 6. Dữ liệu và kết quả
+
+Không commit:
+
+- API key, token, file `.env`;
+- dataset, checkpoint, video, log huấn luyện: lưu trên Hugging Face Hub hoặc Kaggle, dán liên kết vào pull request;
+- PDF báo cáo và các file build khác.
+
+Mỗi số liệu đưa vào báo cáo phải truy được về commit, file cấu hình, seed và log gốc theo [`docs/evaluation-protocol.md`](docs/evaluation-protocol.md). Quy tắc trích dẫn, hình và bảng: [`report/README.md`](report/README.md).

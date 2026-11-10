@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "scripts/linux"))
+sys.path.insert(0, str(ROOT / "tools/twin"))
 
 import twin_grasp as tg  # noqa: E402
 import twin_scene as ts  # noqa: E402

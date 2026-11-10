@@ -5,8 +5,13 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Lint and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,10 +19,32 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: |
-          uv sync --dev --extra native-camera-replay
-          uv pip install opencv-python-headless
+        run: uv sync --locked
       - name: Lint
         run: uv run ruff check .
       - name: Test
         run: uv run pytest -q
+
+  report:
+    name: Build report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            report:
+              - 'report/**'
+      - name: Compile LaTeX
+        if: steps.changes.outputs.report == 'true'
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: report
+      - name: Upload PDF
+        if: steps.changes.outputs.report == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-pdf
+          path: report/main.pdf
