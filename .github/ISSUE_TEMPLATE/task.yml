@@ -1,37 +1,48 @@
-name: Task
-description: One work item from the project plan
+name: Đầu việc
+description: Một đầu việc trong kế hoạch dự án
 title: "<type>(<scope>): <summary>"
 body:
-  - type: input
-    id: milestone
+  - type: dropdown
+    id: phase
     attributes:
-      label: Milestone
-      placeholder: M1 Simulation data and VLA
+      label: Giai đoạn
+      options:
+        - "1. Dữ liệu mô phỏng và chọn mô hình"
+        - "2. Huấn luyện và đánh giá trong mô phỏng"
+        - "3. Tích hợp robot thật"
+        - "4. Thực nghiệm trên robot thật"
+        - "5. Hoàn thiện báo cáo"
     validations:
       required: true
   - type: textarea
     id: goal
     attributes:
-      label: Goal
-      description: What needs to exist when this task is done.
+      label: Mô tả
+      description: Việc cần làm và kết quả bàn giao.
     validations:
       required: true
   - type: textarea
     id: done
     attributes:
-      label: Done when
-      description: Checkable completion criteria.
+      label: Tiêu chí hoàn thành
+      description: Các điều kiện kiểm tra được.
       placeholder: |
         - [ ] ...
     validations:
       required: true
-  - type: input
+  - type: dropdown
     id: requirement
     attributes:
-      label: Topic requirement
-      description: Which of the five topic requirements this task serves (1 to 5).
+      label: Yêu cầu đề tài
+      multiple: true
+      options:
+        - "1. Tổng quan VLA và cơ chế lệnh → hành động"
+        - "2. Phần cứng, giao thức điều khiển, hệ thu ảnh"
+        - "3. Triển khai và tinh chỉnh VLA"
+        - "4. Ứng dụng phân loại hoàn chỉnh"
+        - "5. Đánh giá"
   - type: textarea
     id: notes
     attributes:
-      label: Notes
-      description: Dependencies, links, risks.
+      label: Ghi chú
+      description: Phụ thuộc, liên kết, rủi ro.

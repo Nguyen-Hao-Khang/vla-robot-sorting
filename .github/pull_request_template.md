@@ -1,17 +1,18 @@
-## Summary
+## Mô tả
 
-<!-- What this pull request changes and why, in two or three sentences. -->
+<!-- Pull request này thay đổi gì và vì sao, trong 2–3 câu. -->
 
 Closes #
 
-## Checklist
+## Kiểm tra trước khi yêu cầu review
 
-- [ ] The title follows Conventional Commits, e.g. `feat(data): add randomized scene generator`
-- [ ] `uv run ruff check .` passes
-- [ ] `uv run pytest` passes
-- [ ] No secrets, datasets, checkpoints or build outputs are committed
-- [ ] Results (if any) link to the commit, config, seed and raw log
+- [ ] Tiêu đề theo Conventional Commits, ví dụ `feat(data): add randomized scene generator`
+- [ ] `uv run ruff check .` chạy qua
+- [ ] `uv run pytest` chạy qua
+- [ ] Không commit khóa bí mật, dataset, checkpoint hay file build
+- [ ] Kết quả thực nghiệm (nếu có) ghi commit, file cấu hình, seed và liên kết log gốc
+- [ ] Thay đổi trong `report/`: trích dẫn mới có DOI hoặc arXiv, hình và bảng sinh bằng script
 
-## Evidence
+## Bằng chứng
 
-<!-- Test output, screenshots, metrics or dataset links. Delete if not applicable. -->
+<!-- Kết quả test, ảnh chụp, số liệu hoặc liên kết dataset. Xóa mục này nếu không áp dụng. -->
