@@ -5,7 +5,7 @@ Step 2 of the interactive digital twin: proves the API key and model work on thi
 machine and shows how a free command is grounded against the objects actually in
 the scene. One API request per call (primary model, then the fallback only if the
 primary fails). No robot motion. The key is read from GEMINI_API_KEY and never printed.
-  python3 scripts/linux/gemini_command_smoke.py "put the blue block in the left tray"
+  python3 tools/twin/gemini_command_smoke.py "put the blue block in the left tray"
 """
 
 from __future__ import annotations

@@ -27,7 +27,7 @@ Scope: demo / visual-inspection mode. Execution uses upstream RoboTwin grasp/pla
 primitives, NOT the project's audited acceptance stack. Failures are reported with per-step
 diagnostics; a failed motion is never repeated blindly (see Recovery above).
 Run with the RoboTwin conda python in a graphical session:
-  python scripts/linux/twin_console.py --level 3
+  python tools/twin/twin_console.py --level 3
 """
 
 from __future__ import annotations
@@ -2743,7 +2743,10 @@ def main(argv: list[str] | None = None) -> int:
         default=Path.home() / "worktrees/Panthera-HT_RoboTwin/RoboTwin",
     )
     parser.add_argument(
-        "--bridge", type=Path, default=Path(os.environ.get("DAMH_BRIDGE", "/mnt/data/DAMH-Bridge"))
+        "--log-dir",
+        type=Path,
+        default=Path(os.environ.get("DAMH_LOG_DIR", str(Path.home() / "twin_logs"))),
+        help="directory for twin_session_*.jsonl logs",
     )
     parser.add_argument("--level", type=int, choices=sorted(ts.LEVELS), default=1)
     parser.add_argument("--seed", type=int, default=0)
@@ -2769,7 +2772,8 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(f"WARNING: {exc} The twin opens, but free-text commands are disabled.")
         router, planner = None, None
-    log_dir = args.bridge / "incoming" if (args.bridge / "incoming").is_dir() else Path.home()
+    log_dir = args.log_dir
+    log_dir.mkdir(parents=True, exist_ok=True)
     session = log_dir / f"twin_session_{utc_stamp()}.jsonl"
 
     def log(record: dict) -> None:

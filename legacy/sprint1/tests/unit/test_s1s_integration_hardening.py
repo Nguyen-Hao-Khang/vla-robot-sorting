@@ -58,6 +58,7 @@ def test_live_provider_failure_is_partial_not_success_without_actual_network(
             observed["provider_attempts"] += 1
             raise SemanticProviderError("synthetic transport failure")
 
+    monkeypatch.chdir(Path(__file__).resolve().parents[2])
     monkeypatch.setattr(evaluator, "GeminiRESTTransport", NoNetworkTransport)
     monkeypatch.setenv("GEMINI_API_KEY", "synthetic-test-key")
     output = tmp_path / "attempts.jsonl"

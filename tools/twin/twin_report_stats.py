@@ -11,8 +11,8 @@ Reads only the JSONL logs the twin console writes; nothing is sent anywhere. Cou
     rescans and replans.
 
 Usage (inside the repo, any Python 3.10+):
-  python scripts/linux/twin_report_stats.py                 # logs in ~/Downloads
-  python scripts/linux/twin_report_stats.py --logs DIR --out DIR --since-version v15
+  python tools/twin/twin_report_stats.py                 # logs in ~/Downloads
+  python tools/twin/twin_report_stats.py --logs DIR --out DIR --since-version v15
 Writes summary.md, steps.csv and commands.csv to --out (default ~/Downloads/twin_report).
 """
 

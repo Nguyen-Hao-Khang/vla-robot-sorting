@@ -15,7 +15,7 @@ only in the request header, never printed or logged; provider response bodies ar
 Overrides: DAMH_MODEL_CHAIN="a,b", DAMH_MODEL_ESCALATION="c" (or "none"),
 DAMH_MODEL_BUDGETS="gemini-3.5-flash-lite=450,gemini-robotics-er-2-preview=18".
 List the models your key can call (no generation request is made):
-  python scripts/linux/twin_models.py --list
+  python tools/twin/twin_models.py --list
 """
 
 from __future__ import annotations

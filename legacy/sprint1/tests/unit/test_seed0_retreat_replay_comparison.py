@@ -10,7 +10,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-
 from scripts import compare_seed0_retreat_replays as tool
 
 

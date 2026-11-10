@@ -10,7 +10,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location(
-    "twin_cameras", ROOT / "scripts/linux/twin_cameras.py"
+    "twin_cameras", ROOT / "tools/twin/twin_cameras.py"
 )
 cams = importlib.util.module_from_spec(spec)
 sys.modules["twin_cameras"] = cams

@@ -13,7 +13,7 @@ Figures written to --out (default ~/Downloads/twin_report):
   height_vs_tilt.png    highest tool position over two object slots as the gripper tilts;
   workspace_numbers.csv the numbers behind the last two figures.
 
-Usage: python scripts/linux/twin_workspace_plot.py [--out DIR] [--samples 60000]
+Usage: python tools/twin/twin_workspace_plot.py [--out DIR] [--samples 60000]
 """
 
 from __future__ import annotations

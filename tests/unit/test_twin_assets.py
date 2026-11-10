@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "scripts/linux"))
-spec = importlib.util.spec_from_file_location("twin_assets", ROOT / "scripts/linux/twin_assets.py")
+sys.path.insert(0, str(ROOT / "tools/twin"))
+spec = importlib.util.spec_from_file_location("twin_assets", ROOT / "tools/twin/twin_assets.py")
 ta = importlib.util.module_from_spec(spec)
 sys.modules["twin_assets"] = ta
 spec.loader.exec_module(ta)

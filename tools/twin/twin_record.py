@@ -10,14 +10,14 @@ and the configurable workspace camera (configs/twin_cameras.json). Only successf
 are kept unless --keep-failures is given.
 
 Output is a dependency-free raw format (convert it to a LeRobot dataset with
-scripts/linux/lerobot_convert.py, e.g. on Kaggle):
+tools/twin/lerobot_convert.py, e.g. on Kaggle):
   <out>/episode_000000/meta.json        task text, level, object, destination, success, fps, ...
   <out>/episode_000000/states.npy       float32 [T, D]  (arm joints + gripper)
   <out>/episode_000000/actions.npy      float32 [T, D]  (next state = joint-position target)
   <out>/episode_000000/<camera>/000000.jpg ...
 
 Run headless with the RoboTwin conda python (no viewer window):
-  python scripts/linux/twin_record.py --out /mnt/data/DAMH-Bridge/datasets/twin_raw --episodes 50 --levels 1,2,3
+  python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --levels 1,2,3
 """
 
 from __future__ import annotations

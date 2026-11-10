@@ -6,7 +6,6 @@ import tarfile
 from pathlib import Path
 
 import pytest
-
 from scripts.audit_native_manipulation_export_integrity import (
     IntegrityError,
     _expected_rows,

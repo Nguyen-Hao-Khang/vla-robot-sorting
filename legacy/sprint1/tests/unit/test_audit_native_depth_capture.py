@@ -9,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 from PIL import Image
-
 from scripts.audit_native_depth_capture import (
     DepthEvidenceError,
     audit_native_depth_bundle,

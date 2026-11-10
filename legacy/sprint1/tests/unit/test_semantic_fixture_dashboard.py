@@ -7,8 +7,8 @@ import sys
 from copy import deepcopy
 
 import pytest
-
 from scripts.demo_semantic_to_grasp_fixture import main, run_fixture
+
 from vla_robot_sorting.visualization.semantic_report import render_fixture_dashboard
 
 

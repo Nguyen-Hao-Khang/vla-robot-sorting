@@ -9,8 +9,8 @@ import h5py
 import numpy as np
 import pytest
 from PIL import Image
-
 from scripts.replay_native_camera_episode import _verify_export_manifest
+
 from vla_robot_sorting.perception.robotwin_hdf5 import (
     NativeEpisode,
     NativeEpisodeError,

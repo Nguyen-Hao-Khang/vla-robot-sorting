@@ -6,7 +6,7 @@ machine and lists every entity in the scene (name + position), which is what the
 command layer will ground against. The robot only settles to its home pose during
 upstream setup; no planner or task motion runs. Close the window or press Ctrl+C to exit.
 Run with the RoboTwin conda python:
-  ~/miniforge3/bin/conda run --no-capture-output -n RoboTwin python scripts/linux/twin_view.py
+  ~/miniforge3/bin/conda run --no-capture-output -n RoboTwin python tools/twin/twin_view.py
 """
 
 from __future__ import annotations

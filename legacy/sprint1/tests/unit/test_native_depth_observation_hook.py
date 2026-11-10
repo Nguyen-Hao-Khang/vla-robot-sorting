@@ -7,7 +7,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-
 from scripts.linux.probe_panthera_observation import (
     _select_depth_camera_handles,
     parse_args,
