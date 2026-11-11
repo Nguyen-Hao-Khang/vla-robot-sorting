@@ -1,8 +1,9 @@
 # Task specification
 
-- Version: 1.1
+- Version: 1.2
 - Status: frozen on 12 November 2026. Changes require a new version and a new dataset version.
 - 1.1 (12 November 2026, before any dataset was recorded): section 5.3 names the language-model template file.
+- 1.2 (12 November 2026, before any dataset was recorded): the held-out test commands are written and reviewed by the team instead of people outside it (section 5.3).
 - Implementation: `tools/twin/sorting_task.py`
 
 ## 1. Sorting criteria
@@ -76,7 +77,7 @@ The container is named by one attribute that is unique among the containers in t
 |---|---|
 | Templates in `sorting_task.py` (4 object and 3 class templates per language) | Training data, baseline |
 | Language-model templates in `configs/command_templates.json` (about 40 per language and form) | Training data |
-| Commands written by people outside the team | Held-out test set only |
+| Held-out test commands in `configs/test_commands_v1.csv`: one free command per evaluation episode, drafted in varied styles and edited and approved row by row by the team; none reproduces a training template | Test set only |
 
 Examples generated from the templates:
 

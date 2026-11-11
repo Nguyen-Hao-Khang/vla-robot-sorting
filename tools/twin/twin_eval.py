@@ -20,13 +20,14 @@ as one JSON line; ``summarise`` turns the JSONL into the tables of docs/evaluati
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import random
 import subprocess
 import sys
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -79,16 +80,65 @@ def command_criterion(command: st.Command) -> str:
     return "+".join(attr for attr, _value in command.object_reference)
 
 
-def load_bank(source: str, generated: Path, human: Path | None) -> tuple[dict, float]:
+def load_bank(source: str, generated: Path) -> tuple[dict, float]:
+    """Template bank and the share of commands drawn from it, for builtin or generated."""
     if source == "builtin":
         return {}, 0.0
-    path = generated if source == "generated" else human
-    if path is None or not path.is_file():
-        raise SystemExit(f"command source '{source}' needs an existing file (got {path})")
-    bank = st.load_template_bank(path)
+    if not generated.is_file():
+        raise SystemExit(f"command source 'generated' needs {generated}")
+    bank = st.load_template_bank(generated)
     if not bank:
-        raise SystemExit(f"{path} holds no templates")
+        raise SystemExit(f"{generated} holds no templates")
     return bank, 1.0
+
+
+def load_human_plans(
+    path: Path, class_share: float, reviewed_only: bool = True
+) -> list[EpisodePlan]:
+    """Episodes of the held-out command file (tools/data/draft_test_commands.py, CSV).
+
+    Each row names its episode seed, language, allowed objects and destination. The plan is
+    rebuilt from the seed and must agree with the row, then the row's text replaces the
+    command text.
+    """
+    if not path.is_file():
+        raise SystemExit(f"command source 'human' needs an existing --human-commands file ({path})")
+    plans = []
+    with path.open(encoding="utf-8-sig", newline="") as source:
+        for row in csv.DictReader(source):
+            if reviewed_only and row["Reviewed"].strip().lower() != "yes":
+                continue
+            text = row["Command"].strip()
+            if not text:
+                continue
+            plan = plan_episode(int(row["Scene seed"]), row["Language"], class_share, {}, 0.0)
+            targets = tuple(t.strip() for t in row["Allowed objects"].split("|"))
+            command = plan.command
+            if (
+                command.kind != row["Command kind"]
+                or set(command.targets) != set(targets)
+                or command.destination != row["Destination"]
+            ):
+                raise SystemExit(
+                    f"{path}: row for seed {row['Scene seed']} does not match its scene "
+                    f"(check --class-share, now {class_share})"
+                )
+            plans.append(replace(plan, command=replace(command, text=text)))
+    if not plans:
+        raise SystemExit(
+            f"{path} has no usable rows" + (" marked Reviewed=yes" if reviewed_only else "")
+        )
+    return plans
+
+
+def episode_plans(args) -> list[EpisodePlan]:
+    if args.command_source == "human":
+        return load_human_plans(args.human_commands, args.class_share, not args.allow_unreviewed)
+    bank, bank_share = load_bank(args.command_source, args.templates)
+    return [
+        plan_episode(episode_seed(args.seed, i), args.language, args.class_share, bank, bank_share)
+        for i in range(args.episodes)
+    ]
 
 
 class SafetyFilter:
@@ -292,7 +342,7 @@ def episode_record(run: dict, index: int, plan: EpisodePlan, before, after, resu
 def run(args) -> int:
     from twin_console import Twin, record_size
 
-    bank, bank_share = load_bank(args.command_source, args.templates, args.human_commands)
+    plans = episode_plans(args)
     run_meta = {
         "format": FORMAT_VERSION,
         "executor": args.executor,
@@ -315,12 +365,9 @@ def run(args) -> int:
     twin = Twin(args.robotwin_root.resolve(), args.seed, 0, "free", 1, headless=True)
     size = record_size()
     started = time.perf_counter()
-    for index in range(args.episodes):
+    for index, plan in enumerate(plans):
         if index in done:
             continue
-        plan = plan_episode(
-            episode_seed(args.seed, index), args.language, args.class_share, bank, bank_share
-        )
         twin.custom_level = st.to_level(plan.scene)
         twin.setup()
         clock = StepClock(twin.task, twin.step_dt())
@@ -334,7 +381,7 @@ def run(args) -> int:
         with args.out.open("a", encoding="utf-8") as sink:
             sink.write(json.dumps(record, ensure_ascii=False) + "\n")
         print(
-            f"[{index + 1}/{args.episodes}] {'ok  ' if record['success'] else 'FAIL'} "
+            f"[{index + 1}/{len(plans)}] {'ok  ' if record['success'] else 'FAIL'} "
             f"{record['text']} ({record['failure_phase'] or record['summary']})",
             flush=True,
         )
@@ -374,11 +421,24 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--checkpoint", default="", help="label of the served checkpoint (logged)")
     r.add_argument("--episodes", type=int, default=30)
     r.add_argument("--seed", type=int, default=1)
-    r.add_argument("--language", choices=("en", "vi"), default="en")
+    r.add_argument(
+        "--language",
+        choices=("en", "vi"),
+        default="en",
+        help="command language (the human source takes it from each row)",
+    )
     r.add_argument("--class-share", type=float, default=0.3)
     r.add_argument("--command-source", choices=COMMAND_SOURCES, default="builtin")
     r.add_argument("--templates", type=Path, default=ROOT / "configs" / "command_templates.json")
-    r.add_argument("--human-commands", type=Path, default=None)
+    r.add_argument(
+        "--human-commands",
+        type=Path,
+        default=ROOT / "configs" / "test_commands_v1.csv",
+        help="held-out commands for --command-source human (episodes come from this file)",
+    )
+    r.add_argument(
+        "--allow-unreviewed", action="store_true", help="also use rows not marked Reviewed=yes"
+    )
     r.add_argument("--fps", type=float, default=15.0, help="policy action rate")
     r.add_argument("--out", type=Path, required=True)
     s = sub.add_parser("summarise", help="tables from result JSONL files (no simulator needed)")

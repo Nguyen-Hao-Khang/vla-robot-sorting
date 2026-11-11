@@ -61,7 +61,7 @@ flowchart LR
 ```
 
 1. **Simulation data.** A scripted expert in RoboTwin picks and places objects on randomised layouts. It plans with CuRobo and reads object poses from the simulator. A recorder samples joint states, joint targets and both camera streams at 15 Hz and keeps successful episodes ([ADR 0003](docs/adr/0003-data-sources.md)).
-2. **Commands.** A language model writes several Vietnamese and English phrasings for each (object, container) pair. A separate set of commands written by people serves as the held-out test set.
+2. **Commands.** A language model writes several Vietnamese and English phrasings for each (object, container) pair. A separate set of free commands, one per evaluation scene and edited by hand, serves as the held-out test set.
 3. **Fine-tuning.** The team fine-tunes a small VLA with LeRobot. The candidates are SmolVLA and Evo-1 ([ADR 0005](docs/adr/0005-vla-model-selection.md)). ACT, trained on the same data without language, is the baseline.
 4. **Deployment.** A policy server runs the checkpoint in the LeRobot environment and answers the simulator or the robot controller over a local socket. Every action passes a safety layer before execution ([ADR 0004](docs/adr/0004-safety-layer.md)).
 5. **Real-robot adaptation.** The team records 30–50 teleoperated demonstrations on the real arm and compares training on simulation data, real data, and both.
@@ -91,7 +91,7 @@ No evaluation has been run yet. The experiments below are fixed in advance by th
 
 | ID | Experiment | Conditions | State |
 |---|---|---|---|
-| E1 | Simulation | Vietnamese vs English; training-set commands vs held-out human-written commands | Pending |
+| E1 | Simulation | Vietnamese vs English; training-style vs held-out test commands | Pending |
 | E2 | Language ablation | Fine-tuned VLA vs ACT on identical scenes | Pending |
 | E3 | Real robot | Trained on simulation only, real only, simulation + real | Pending |
 

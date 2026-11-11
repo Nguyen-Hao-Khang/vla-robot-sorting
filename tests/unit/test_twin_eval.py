@@ -121,11 +121,61 @@ def test_episode_plans_are_seeded_and_paired_across_languages() -> None:
 
 
 def test_command_sources(tmp_path) -> None:
-    assert te.load_bank("builtin", tmp_path / "x.json", None) == ({}, 0.0)
-    bank, share = te.load_bank("generated", ROOT / "configs" / "command_templates.json", None)
+    assert te.load_bank("builtin", tmp_path / "x.json") == ({}, 0.0)
+    bank, share = te.load_bank("generated", ROOT / "configs" / "command_templates.json")
     assert share == 1.0 and len(bank["vi"]["class"]) >= 30
     with pytest.raises(SystemExit):
-        te.load_bank("human", tmp_path / "x.json", None)
+        te.load_bank("generated", tmp_path / "x.json")
+    with pytest.raises(SystemExit):
+        te.load_human_plans(tmp_path / "x.csv", 0.3)
+
+
+def _draft_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "draft_test_commands", ROOT / "tools/data/draft_test_commands.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_human_command_file_round_trip(tmp_path) -> None:
+    draft = _draft_module()
+    items = draft.draft_items(9, 6, 0.3)
+    assert [i["language"] for i in items] == ["vi", "en"] * 3
+    path = tmp_path / "commands.csv"
+    draft.write_csv(path, items, {i["id"]: f"text {i['id']}" for i in items})
+    with pytest.raises(SystemExit):  # nothing reviewed yet
+        te.load_human_plans(path, 0.3)
+    plans = te.load_human_plans(path, 0.3, reviewed_only=False)
+    assert [p.command.text for p in plans] == [f"text {i}" for i in range(6)]
+    for plan, item in zip(plans, items, strict=True):
+        assert plan.seed == item["seed"] and plan.command.destination == item["destination"]
+        assert plan.command.language == item["language"]
+    # the same seeds with template commands give the same scenes (paired comparison)
+    template = te.plan_episode(items[0]["seed"], "vi", 0.3, {}, 0.0)
+    assert template.scene == plans[0].scene
+    # a wrong class share changes the commands and is caught
+    with pytest.raises(SystemExit):
+        te.load_human_plans(path, 1.0, reviewed_only=False)
+
+
+def test_draft_check_rejects_training_templates() -> None:
+    draft = _draft_module()
+    item = draft.draft_items(9, 2, 0.0)[1]  # English object command
+    copy = st.EN_OBJECT_TEMPLATES[0].format(
+        obj=item["object_phrase"].removeprefix("the "), dest=item["container_phrase"]
+    )
+    assert draft.check_draft(copy, item, {}) == "same as a training template"
+    assert (
+        draft.check_draft(
+            "would you be so kind as to tidy " + item["object_phrase"] + " away", item, {}
+        )
+        is None
+    )
+    assert draft.check_draft("đặt nó vào khay", item, {}) == "not english"
 
 
 def test_safety_filter() -> None:
