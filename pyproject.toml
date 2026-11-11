@@ -20,7 +20,7 @@ dev = [
   "opencv-python-headless>=4.9,<5",
   "Pillow>=10,<13",
   "pre-commit>=4,<5",
-  "pytest>=8.3,<9",
+  "pytest>=8.3,<10",
   "pytest-cov>=6,<7",
   "ruff>=0.12,<1",
 ]
