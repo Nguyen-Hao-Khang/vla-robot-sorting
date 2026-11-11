@@ -52,9 +52,9 @@ def test_default_chain_flash_lite_first_robotics_only_for_escalation() -> None:
     assert tm.DEFAULT_CHAIN == ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
     assert tm.DEFAULT_ESCALATION == ("gemini-robotics-er-2-preview",)
     assert tm.DEFAULT_BUDGETS["gemini-3.5-flash-lite"] == 450
-    assert tm.model_chain({"DAMH_MODEL_CHAIN": "a, b,a"}) == ("a", "b")
+    assert tm.model_chain({"VRS_MODEL_CHAIN": "a, b,a"}) == ("a", "b")
     assert tm.model_chain({}) == tm.DEFAULT_CHAIN
-    assert tm.escalation_chain({"DAMH_MODEL_ESCALATION": "none"}) == ()
+    assert tm.escalation_chain({"VRS_MODEL_ESCALATION": "none"}) == ()
     assert tm.parse_budgets("a=10, b=x, c=3") == {"a": 10, "c": 3}
 
 

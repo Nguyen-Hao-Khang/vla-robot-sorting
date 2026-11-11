@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ruff: noqa: E501  # long operator-facing status lines
-"""Interactive digital twin v15: type a sorting command, a model plans it, Panthera-HT does it live.
+"""Interactive digital twin: type a sorting command, a model plans it, Panthera-HT executes it.
 
 One persistent RoboTwin scene stays open in the SAPIEN viewer, with a second window that
 streams the wrist (gripper) camera and the workspace cameras. Seven scene levels:
@@ -16,7 +16,7 @@ that fails validation is passed to the next model. The robot executes the steps 
 RoboTwin's planners: hover above the object at a safe height, grasp, straight lift, short
 horizontal hops, alignment in the air, straight descent, low release, straight retreat. After a failed step or a change the plan did not cause
 (simulator check + workspace camera), the workspace is rescanned and the planner is asked for
-the remaining work (at most MAX_REPLANS rounds). Recovery (v11): an object whose motion failed
+the remaining work (at most MAX_REPLANS rounds). Recovery: an object whose motion failed
 (knocked over, pushed out, missed) is planned again only through a fresh rescan and a new
 validated plan from its CURRENT pose, at most MAX_OBJECT_ATTEMPTS times; an object stuck in
 the gripper is never re-attempted; a placed object that is later knocked out of its
@@ -24,7 +24,7 @@ destination is put back. `perceive` runs the VLM detector on the workspace camer
 simulator truth; `source vlm` plans from the camera detections instead of the simulator list.
 
 Scope: demo / visual-inspection mode. Execution uses upstream RoboTwin grasp/place
-primitives, NOT the project's audited acceptance stack. Failures are reported with per-step
+primitives; it is a demonstration and data-collection tool, not an evaluated controller. Failures are reported with per-step
 diagnostics; a failed motion is never repeated blindly (see Recovery above).
 Run with the RoboTwin conda python in a graphical session:
   python tools/twin/twin_console.py --level 3
@@ -72,7 +72,7 @@ MIN_LIFT_M = 0.03
 MAX_STEPS = 6
 TWIN_VERSION = "v15"  # written into every session log (setup event)
 PLACE_CONSTRAINS = ("free", "align", "auto")
-CACHE_DIR = Path.home() / ".cache" / "damh_twin"
+CACHE_DIR = Path.home() / ".cache" / "vla_robot_sorting"
 
 SYSTEM = (
     "You plan robot pick-and-place work on a table for one robot arm. The operator command may "
@@ -740,8 +740,8 @@ class Twin:
 
         if self.task is not None:
             self.task.close_env()
-        cache = "disabled (DAMH_PLANNER_OBSTACLES=0)"
-        if os.environ.get("DAMH_PLANNER_OBSTACLES", "1") != "0":
+        cache = "disabled (VRS_PLANNER_OBSTACLES=0)"
+        if os.environ.get("VRS_PLANNER_OBSTACLES", "1") != "0":
             cache = tob.enlarge_collision_cache()
         task, args = prepare_task_and_args(TASK, TASK_CONFIG)
         args.update(
@@ -884,16 +884,16 @@ class Twin:
         return status
 
     def relax_world(self, label: str) -> bool:
-        """Drop the scene obstacles (table-only world, the v8.1 behaviour) after a refusal.
+        """Drop the scene obstacles (table-only world) after a refusal.
 
         Returns False when the world was already table-only. The scene world is loaded again
-        for the next pick (v11: never switched off for the whole session, because the
-        table-only world let the arm sweep through a tall carton in the v10 runs).
+        for the next pick. It is never switched off for the whole session, because the
+        table-only world lets the arm sweep through a tall carton.
         """
         # A short straight move (lift, descend, final approach, retreat) cannot sweep: it may
-        # use the table-only world (v14: keeping the carton already in the deep bin made the
-        # descent of the second carton impossible). Any other motion keeps the tall objects
-        # (v11.1: the table-only world let a free motion sweep the cartons in the bin).
+        # use the table-only world (keeping a carton already in the deep bin as an obstacle makes
+        # the descent of a second carton impossible). Any other motion keeps the tall objects,
+        # because in the table-only world a free motion can sweep the cartons in the bin.
         if label in STRAIGHT_LABELS:
             if self.world_state not in ("scene", "relaxed"):
                 return False
@@ -1299,8 +1299,7 @@ class Twin:
 
         Panthera's home posture is all zeros, exactly the lower limit of joints 2 and 3;
         after a move home the joint controller can settle a hair past it, and CuRobo then
-        rejects that start state, so every later plan fails (suspected cause of the v14
-        session where nothing could move after one failure). Best effort; True if changed.
+        rejects that start state, so every later plan fails. Best effort; True if changed.
         """
         try:
             entity = self.task.robot.left_entity
@@ -1331,9 +1330,9 @@ class Twin:
 
     def force_home(self, arm=None) -> bool:
         """Last resort when CuRobo refuses every motion (for instance a start state it
-        rejects): drive the joints to the home posture directly, without planning (v14 log:
-        after one refused descent every later motion and command failed). Returns True if
-        the drive was available."""
+        rejects): drive the joints to the home posture directly, without planning. Without
+        this, one refused descent can make every later motion fail. Returns True if the
+        drive was available."""
         robot = getattr(self.task, "robot", None)
         drive = getattr(robot, "move_to_homestate", None)
         if drive is None:
@@ -1509,7 +1508,7 @@ class Twin:
         source = ts.location_of(level, objects_xyz[obj_name], self.table_top)
         # Inside a container its walls are checked by the twin's finger-room test; in CuRobo
         # (with its margin) they rejected the vertical grasps of a carton in the deep bin and
-        # left only a 50 deg tilt that could not be carried (v11 swaps).
+        # left only a 50 deg tilt that could not be carried.
         holder = {
             c.name for c in level.containers if c.name == source and c.kind not in ("table", "pad")
         }
@@ -1810,7 +1809,7 @@ class Twin:
                     turn, quat2 = 0.0, list(pose[3:7])
                 # A tilted grasp leans away from the robot where it was picked; above the slot
                 # it must lean away from the robot there too, or the arm cannot reach down
-                # (v14: descents refused). Turn about the vertical while carrying: the object
+                # (CuRobo refuses the descent). Turn about the vertical while carrying: the object
                 # stays upright and only spins in place.
                 c = self.object_xyz(obj_name)
                 off = _rotz(turn) @ np.array([c[k] - pose[k] for k in range(3)])
@@ -1888,7 +1887,7 @@ class Twin:
             pose = self.ee_pose(arm)
             if pose is not None:
                 dz = max(dz, safe_z - pose[2])
-            # constrained straight up: the v10 free-path retreat dragged a carton sideways
+            # constrained straight up: a free-path retreat can drag the object sideways
             how = self.linear_move(arm, 0.0, 0.0, dz, guard, "retreat")
             notes["retreat"] = f"straight up {dz * 100:.1f} cm ({how})"
             return None
@@ -1977,7 +1976,7 @@ class Twin:
             and obj.shape not in ("sphere", "tetrahedron")
             and ts.toppled(obj, list(actor.get_pose().q))
         ):
-            # v11: it is where the operator wanted it; standing it up again would need a
+            # It is where the operator wanted it; standing it up again would need a
             # re-grasp that leaves it lying anyway, so the step counts as done (reported).
             lying = "; it fell over inside and was left lying there"
         where_text = "on the table" if dest.kind == "table" else f"in the {dest_name}"
@@ -1989,8 +1988,8 @@ class Twin:
 
     def _put_back(self, arm, obj_name: str, start_xyz: list[float], guard) -> str:
         """After a failed carry: bring the held object back over where it was picked and set
-        it down there instead of opening the gripper high up (v11: a carton dropped from
-        15 cm and fell over in the bin). Best effort; returns a note."""
+        it down there instead of opening the gripper high up (a carton dropped from
+        15 cm falls over in the bin). Best effort; returns a note."""
         try:
             x, y, z = self.object_xyz(obj_name)
             if z < start_xyz[2] + 0.01:
@@ -2337,7 +2336,7 @@ MAX_OBJECT_ATTEMPTS = 3  # failed motions per object before it is given up
 class CommandProgress:
     """What has happened so far while working on one operator command (all rounds).
 
-    Recovery policy (v11): a failed motion is never repeated as it was. The workspace is
+    Recovery policy: a failed motion is never repeated as it was. The workspace is
     rescanned, the planner makes a new plan from the CURRENT scene, and the plan is validated
     again; an object may appear in such a new plan until it has failed MAX_OBJECT_ATTEMPTS
     times. An object stuck in the gripper is never planned again in this command.
@@ -2745,7 +2744,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--log-dir",
         type=Path,
-        default=Path(os.environ.get("DAMH_LOG_DIR", str(Path.home() / "twin_logs"))),
+        default=Path(os.environ.get("VRS_LOG_DIR", str(Path.home() / "twin_logs"))),
         help="directory for twin_session_*.jsonl logs",
     )
     parser.add_argument("--level", type=int, choices=sorted(ts.LEVELS), default=1)

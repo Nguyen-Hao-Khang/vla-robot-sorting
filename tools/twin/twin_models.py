@@ -4,7 +4,7 @@
 
 Primary chain (fast, 500 free requests/day each): gemini-3.5-flash-lite, then
 gemini-3.1-flash-lite once the first has used its daily budget (450 by default, counted per
-Pacific day in ~/.cache/damh_twin/model_usage.json). Escalation: gemini-robotics-er-2-preview
+Pacific day in ~/.cache/vla_robot_sorting/model_usage.json). Escalation: gemini-robotics-er-2-preview
 (20/day) is asked only when the primary answer is a refusal/clarification (second opinion)
 or when no primary model produced a valid answer. Models that hit HTTP 429 are skipped for a
 cool-down (or for the session when the server asks for a long wait), unavailable models
@@ -12,8 +12,8 @@ cool-down (or for the session when the server asks for a long wait), unavailable
 more with the schema written into the prompt. The API key is read from GEMINI_API_KEY, sent
 only in the request header, never printed or logged; provider response bodies are not stored.
 
-Overrides: DAMH_MODEL_CHAIN="a,b", DAMH_MODEL_ESCALATION="c" (or "none"),
-DAMH_MODEL_BUDGETS="gemini-3.5-flash-lite=450,gemini-robotics-er-2-preview=18".
+Overrides: VRS_MODEL_CHAIN="a,b", VRS_MODEL_ESCALATION="c" (or "none"),
+VRS_MODEL_BUDGETS="gemini-3.5-flash-lite=450,gemini-robotics-er-2-preview=18".
 List the models your key can call (no generation request is made):
   python tools/twin/twin_models.py --list
 """
@@ -45,7 +45,7 @@ DEFAULT_BUDGETS = {
     "gemini-3.1-flash-lite": 450,
     "gemini-robotics-er-2-preview": 18,
 }
-USAGE_FILE = Path.home() / ".cache" / "damh_twin" / "model_usage.json"
+USAGE_FILE = Path.home() / ".cache" / "vla_robot_sorting" / "model_usage.json"
 SHORT_COOLDOWN_S = 65.0  # per-minute limits clear after about a minute
 LONG_WAIT_S = 300.0  # longer Retry-After means a daily quota: skip for the session
 
@@ -71,11 +71,11 @@ def _models_from(env: dict[str, str] | None, key: str, default: tuple[str, ...])
 
 
 def model_chain(env: dict[str, str] | None = None) -> tuple[str, ...]:
-    return _models_from(env, "DAMH_MODEL_CHAIN", DEFAULT_CHAIN) or DEFAULT_CHAIN
+    return _models_from(env, "VRS_MODEL_CHAIN", DEFAULT_CHAIN) or DEFAULT_CHAIN
 
 
 def escalation_chain(env: dict[str, str] | None = None) -> tuple[str, ...]:
-    return _models_from(env, "DAMH_MODEL_ESCALATION", DEFAULT_ESCALATION)
+    return _models_from(env, "VRS_MODEL_ESCALATION", DEFAULT_ESCALATION)
 
 
 def extract_json(text: str) -> dict:
@@ -438,7 +438,7 @@ def router_from_env() -> ModelRouter:
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set in this terminal.")
-    budgets = {**DEFAULT_BUDGETS, **parse_budgets(os.environ.get("DAMH_MODEL_BUDGETS", ""))}
+    budgets = {**DEFAULT_BUDGETS, **parse_budgets(os.environ.get("VRS_MODEL_BUDGETS", ""))}
     return ModelRouter(GeminiAPI(key), model_chain(), escalation_chain(), budgets, UsageStore())
 
 

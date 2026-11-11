@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise digital-twin session logs (twin_session_*.jsonl) for the mid-term report.
+"""Summarise digital-twin session logs (twin_session_*.jsonl).
 
 Reads only the JSONL logs the twin console writes; nothing is sent anywhere. Counts:
   * commands per decision (execute / refuse / clarify) and per final result;
@@ -12,7 +12,7 @@ Reads only the JSONL logs the twin console writes; nothing is sent anywhere. Cou
 
 Usage (inside the repo, any Python 3.10+):
   python tools/twin/twin_report_stats.py                 # logs in ~/Downloads
-  python tools/twin/twin_report_stats.py --logs DIR --out DIR --since-version v15
+  python tools/twin/twin_report_stats.py --logs DIR --out DIR --since-version <twin_version>
 Writes summary.md, steps.csv and commands.csv to --out (default ~/Downloads/twin_report).
 """
 
