@@ -44,7 +44,7 @@ jobs:
           working_directory: report
       - name: Upload PDF
         if: steps.changes.outputs.report == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: report-pdf
           path: report/main.pdf
