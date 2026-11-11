@@ -1,0 +1,50 @@
+name: Bug report
+description: Something in the code, simulation or tooling does not behave as documented
+title: "fix(<scope>): <short description>"
+labels: ["bug"]
+body:
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Output of `git log --oneline -1`
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Development (unit tests, tooling)
+        - Simulation (RoboTwin)
+        - Training (local GPU or Kaggle)
+        - Real robot
+        - CI
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands, scene level and seed where relevant
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Terminal output or the relevant lines of the session log
+      render: text

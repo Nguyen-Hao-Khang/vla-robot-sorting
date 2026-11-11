@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "vla-robot-sorting"
 version = "0.1.0"
-description = "Panthera-HT VLA object-sorting research and simulation stack"
+description = "Language-conditioned object sorting with a small vision-language-action model on the Panthera-HT arm"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = { text = "MIT" }
@@ -16,10 +16,10 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-  "h5py>=3.11,<4",
   "numpy>=1.26,<3",
   "opencv-python-headless>=4.9,<5",
   "Pillow>=10,<13",
+  "pre-commit>=4,<5",
   "pytest>=8.3,<9",
   "pytest-cov>=6,<7",
   "ruff>=0.12,<1",
@@ -33,7 +33,6 @@ pythonpath = ["."]
 addopts = "-ra --strict-markers --import-mode=importlib"
 testpaths = ["tests"]
 markers = [
-  "integration: tests requiring multiple project components",
   "simulator: tests requiring a simulator/runtime not guaranteed on Windows",
   "network: tests requiring external network/API access",
 ]
