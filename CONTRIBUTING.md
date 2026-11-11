@@ -1,96 +1,89 @@
-# Đóng góp
+# Contributing
 
-Tài liệu này quy định cách nhóm đặt tên nhánh, viết commit, viết comment và mở pull request cho dự án.
+This guide covers branches, commits, code and pull requests.
 
-## 1. Ngôn ngữ
+## 1. Branches
 
-| Thành phần | Ngôn ngữ |
+`main` always passes lint and tests. Work happens on short-lived branches that reach `main` through a pull request. Direct pushes to `main` are blocked.
+
+Branch name: `<owner>/<topic>`
+
+| Part | Rule |
 |---|---|
-| Tài liệu (`README`, `docs/`), báo cáo (`report/`), nội dung issue và pull request | Tiếng Việt |
-| Tên biến, hàm, lớp, comment, docstring, log, commit, tên nhánh, tiêu đề issue và pull request | Tiếng Anh |
+| `owner` | Member handle: `khangnh`, `huyvq`, `phucpg` |
+| `topic` | 2–5 lowercase English words joined by hyphens, ASCII only |
 
-## 2. Nhánh
+Examples: `khangnh/scene-randomizer`, `huyvq/smolvla-benchmark`, `phucpg/instruction-generator`.
 
-`main` luôn qua được lint và test. Mỗi việc làm trên một nhánh ngắn hạn và vào `main` qua pull request. Không push thẳng lên `main`.
+## 2. Commits
 
-Tên nhánh: `<người-phụ-trách>/<việc>`
-
-| Phần | Quy tắc |
-|---|---|
-| `người-phụ-trách` | Tên định danh của thành viên chịu trách nhiệm: `khangnh`, `huyvq`, `phucpg` |
-| `việc` | 2 đến 5 từ tiếng Anh viết thường, nối bằng dấu gạch ngang, chỉ ký tự ASCII |
-
-Ví dụ: `khangnh/scene-randomizer`, `huyvq/smolvla-benchmark`, `phucpg/chapter-2-background`.
-
-## 3. Commit
-
-Commit theo [Conventional Commits](https://www.conventionalcommits.org/), viết bằng tiếng Anh:
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 <type>(<scope>): <summary>
 
-<body: what and why, wrapped at 72 columns>
+<body: what changed and why, wrapped at 72 columns>
 
 Refs: #<issue>
 ```
 
-- `summary`: thể mệnh lệnh, chữ thường, không dấu chấm cuối, tối đa 50 ký tự.
-- `body`: tùy chọn, giải thích lý do thay đổi thay vì kể lại diff.
-- Mỗi commit chứa một thay đổi logic. Lint và test phải qua sau mỗi commit.
+- `summary`: imperative mood, lowercase, no trailing period, at most 50 characters.
+- `body`: optional; explain the reason, not the diff.
+- One logical change per commit. Lint and tests pass after every commit.
 
-| `type` | Dùng khi |
+| `type` | Use for |
 |---|---|
-| `feat` | Thêm tính năng |
-| `fix` | Sửa lỗi |
-| `test` | Thêm hoặc sửa test |
-| `docs` | Tài liệu hoặc nội dung báo cáo |
-| `exp` | Cấu hình thí nghiệm, kết quả đánh giá, bảng số liệu |
-| `build` | Thư viện phụ thuộc, CI, công cụ |
-| `refactor` | Đổi cấu trúc mã, không đổi hành vi |
+| `feat` | New functionality |
+| `fix` | Bug fix |
+| `test` | Tests only |
+| `docs` | Documentation only |
+| `exp` | Experiment configuration, evaluation results, result tables |
+| `build` | Dependencies, CI, tooling |
+| `refactor` | Restructuring without behaviour change |
 
-Scope thường dùng: `sim`, `data`, `train`, `eval`, `robot`, `safety`, `report`.
-
-Ví dụ:
+Common scopes: `sim`, `data`, `train`, `eval`, `robot`, `safety`.
 
 ```
 feat(data): randomize object layout per episode
-fix(sim): add table objects to curobo world
+fix(sim): add table objects to the curobo world
 exp(eval): add smolvla simulation results
-docs(report): draft related work on small vlas
+build(ci): cache uv environment
 ```
 
-## 4. Mã nguồn
+## 3. Code
 
-- Định dạng và lint bằng `ruff` (độ dài dòng 100).
-- Comment và docstring viết tiếng Anh, ngắn, nêu ý định hoặc ràng buộc thay vì lặp lại mã.
-- Thay đổi hành vi thì thêm test. Test không được cần GPU, mô phỏng hay mạng; phần cần phần cứng đánh dấu `@pytest.mark.simulator` hoặc `@pytest.mark.network`.
-- Không nới ngưỡng an toàn để một lần chạy qua được.
-- Không ghi đường dẫn tuyệt đối của máy cá nhân. Dùng tham số dòng lệnh hoặc biến môi trường.
-- Việc dự định làm: `TODO(<scope>): <action>`.
+- Format and lint with `ruff` (line length 100). `uv run pre-commit install` runs the checks on every commit.
+- Write identifiers, comments, docstrings and log messages in English. Comments state intent or constraints, not what the code already says.
+- Add a test for every behaviour change. Unit tests must run without a GPU, the simulator or network access; mark exceptions with `@pytest.mark.simulator` or `@pytest.mark.network`.
+- Never relax a safety threshold to make a run pass.
+- No absolute paths from a personal machine. Use command-line arguments or environment variables.
+- Planned work: `TODO(<scope>): <action>`.
 
-## 5. Pull request
+## 4. Pull requests
 
-Trước khi mở pull request, chạy:
+Before opening a pull request:
 
 ```sh
 uv run ruff check .
 uv run pytest
 ```
 
-Quy trình:
+1. Update `main` and branch from it.
+2. Commit following section 2 and push the branch.
+3. Open a pull request into `main`. Use a Conventional Commits title, describe what changed and how you tested it, and add `Closes #<issue>`.
+4. Check your own diff. When CI is green, merge with **Squash and merge**. No approval is required.
+5. GitHub deletes the branch after the merge.
 
-1. Cập nhật `main` và tạo nhánh mới từ đó.
-2. Commit theo mục 3, push nhánh lên GitHub.
-3. Mở pull request vào `main`. Mô tả nêu việc đã làm, cách kiểm tra, ghi `Closes #<số issue>`.
-4. Tự kiểm tra thay đổi của mình. Khi CI xanh, tự bấm **Squash and merge**. Không cần chờ người khác duyệt.
-5. GitHub tự xóa nhánh sau khi merge.
+## 5. Data and results
 
-## 6. Dữ liệu và kết quả
+Keep these out of Git:
 
-Không commit:
+- API keys, tokens, `.env` files;
+- datasets, checkpoints, videos, training logs: store them on the Hugging Face Hub or Kaggle and link them from the pull request;
+- build outputs.
 
-- API key, token, file `.env`;
-- dataset, checkpoint, video, log huấn luyện: lưu trên Hugging Face Hub hoặc Kaggle, dán liên kết vào pull request;
-- PDF báo cáo và các file build khác.
+Every reported number must trace to a commit, a configuration, the scene seeds and the raw evaluation log ([evaluation protocol](docs/evaluation-protocol.md)).
 
-Mỗi số liệu đưa vào báo cáo phải truy được về commit, file cấu hình, seed và log gốc theo [`docs/evaluation-protocol.md`](docs/evaluation-protocol.md). Quy tắc trích dẫn, hình và bảng: [`report/README.md`](report/README.md).
+## 6. Issues
+
+Use the issue forms: **Bug report** for defects, **Feature request** for new capabilities, **Task** for a work item from the [project plan](docs/project-plan.md).

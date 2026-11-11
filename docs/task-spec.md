@@ -1,39 +1,39 @@
-# Đặc tả nhiệm vụ
+# Task specification
 
-Bản nháp. Nhóm chốt đặc tả này trước khi sinh dataset huấn luyện đầu tiên, và không đổi sau đó trừ khi tăng phiên bản dataset.
+Status: draft. The team freezes this specification before generating the first training dataset. Any later change requires a new dataset version.
 
-## 1. Cảnh
+## 1. Scene
 
-- Bàn làm việc trước robot, kích thước và vị trí khớp với bàn thật (đo khi robot về).
-- 3 khay cố định: trái, giữa, phải.
-- Mỗi cảnh có 2–4 vật đặt ngẫu nhiên trong vùng gắp, không chồng lên nhau.
+- A table in front of the robot, matched to the real table once the robot arrives.
+- Three fixed containers: left, centre, right.
+- Two to four objects per scene, placed at random in the pick area without overlap.
 
-## 2. Vật
+## 2. Objects
 
-| Thuộc tính | Giá trị |
+| Attribute | Values |
 |---|---|
-| Hình dạng | khối lập phương, hình trụ, khối chữ nhật |
-| Màu | đỏ, xanh lá, xanh dương, vàng |
-| Kích thước | cạnh 4–6 cm, vừa kẹp hai ngón |
+| Shape | cube, cylinder, rectangular block |
+| Colour | red, green, blue, yellow |
+| Size | 4–6 cm edge, within the gripper opening |
 
-Hình tứ diện bị loại vì kẹp hai ngón gắp không ổn định (`docs/architecture.md` mục 5).
+Tetrahedra are excluded ([architecture](architecture.md#5-known-simulator-limits)).
 
-## 3. Câu lệnh
+## 3. Commands
 
-Mỗi câu lệnh chỉ định một vật bằng màu, hình dạng hoặc cả hai, và một khay. Ví dụ:
+A command names one object by colour, shape or both, and one container. Examples:
 
 - "gắp khối màu đỏ bỏ vào khay bên trái"
 - "put the blue cylinder in the middle tray"
 - "cho cái hình trụ vàng vào khay phải"
 
-Câu lệnh phải xác định duy nhất một vật trong cảnh. Bộ sinh cảnh kiểm tra điều kiện này.
+The command must identify exactly one object in the scene. The scene generator checks this.
 
-## 4. Tiêu chí thành công
+## 4. Success criteria
 
-Một lượt thành công khi, lúc kết thúc lượt:
+An episode succeeds when, at its end:
 
-1. vật được chỉ định nằm trong khay được chỉ định;
-2. không vật nào khác bị dời vào khay nào;
-3. lớp an toàn không dừng robot.
+1. the named object rests in the named container;
+2. no other object has moved into any container;
+3. the safety layer has not stopped the robot.
 
-Thời gian tối đa một lượt: 60 giây.
+Time limit: 60 seconds per episode.

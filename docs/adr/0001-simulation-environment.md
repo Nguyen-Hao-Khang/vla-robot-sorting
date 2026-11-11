@@ -1,26 +1,26 @@
-# ADR 0001: Dùng RoboTwin với mô hình Panthera-HT làm môi trường mô phỏng
+# ADR 0001: RoboTwin with the Panthera-HT model as the simulator
 
-- Trạng thái: Chấp nhận
-- Ngày: 2026-10-05
+- Status: Accepted
+- Date: 2026-10-05
 
-## Bối cảnh
+## Context
 
-Nhóm cần sinh hàng trăm demo gắp–đặt và đánh giá mô hình hàng trăm lượt trước khi có robot thật. Môi trường mô phỏng phải có mô hình đúng của cánh tay Panthera-HT, camera kết xuất được ảnh màu và chạy được trên laptop GTX 1660 Ti.
+The project needs hundreds of pick-and-place demonstrations and hundreds of evaluation episodes before the real arm arrives. The simulator must include an accurate Panthera-HT model, render RGB cameras, and run on a laptop with a GTX 1660 Ti.
 
-## Phương án
+## Options
 
-| Phương án | Ưu điểm | Nhược điểm |
+| Option | Advantages | Disadvantages |
 |---|---|---|
-| RoboTwin (SAPIEN, PhysX), bản Panthera-HT của hãng HighTorque | Hãng cung cấp sẵn mô hình robot; có sẵn bộ lập kế hoạch CuRobo; cộng đồng dùng để sinh dữ liệu VLA | Chỉ chạy trên Linux có GPU NVIDIA; tài liệu ít |
-| Isaac Sim / Isaac Lab | Kết xuất đẹp, mô phỏng vật lý mạnh | Cần GPU RTX và nhiều VRAM; phải tự dựng mô hình Panthera-HT |
-| MuJoCo | Nhẹ, nhanh | Phải tự chuyển mô hình robot; kết xuất ảnh kém thực tế hơn |
+| RoboTwin (SAPIEN, PhysX), Panthera-HT fork by HighTorque Robotics | Vendor-provided robot model; CuRobo planner integrated; used by the community to generate VLA data | Linux with an NVIDIA GPU only; sparse documentation |
+| Isaac Sim / Isaac Lab | High-quality rendering and physics | Needs an RTX GPU with large VRAM; the Panthera-HT model would have to be built |
+| MuJoCo | Light and fast | The robot model would have to be converted; less realistic rendering |
 
-## Quyết định
+## Decision
 
-Dùng Panthera-HT RoboTwin, cố định commit `2aee31ad`, CuRobo `v0.7.8`, SAPIEN `3.0.0b1` (xem `docs/getting-started.md`).
+Use Panthera-HT RoboTwin at commit `2aee31ad`, CuRobo `v0.7.8` and SAPIEN `3.0.0b1` ([`configs/repos.lock.yaml`](../../configs/repos.lock.yaml)).
 
-## Hệ quả
+## Consequences
 
-- Mô phỏng chỉ chạy trên máy Ubuntu có GPU NVIDIA. Các thành viên khác làm phần dữ liệu, huấn luyện và báo cáo trên Windows hoặc GPU đám mây.
-- Code dự án truy cập RoboTwin qua `tools/twin/`, không sửa mã nguồn RoboTwin.
-- Các giới hạn tầm với và vật cản của môi trường được ghi trong `docs/architecture.md` mục 5.
+- Simulation runs only on Ubuntu with an NVIDIA GPU. Data processing, training and writing happen on Windows or cloud GPUs.
+- Project code reaches RoboTwin through `tools/twin/` and does not modify RoboTwin sources.
+- Reach and collision limits of the simulated setup are listed in [architecture, section 5](../architecture.md#5-known-simulator-limits).
