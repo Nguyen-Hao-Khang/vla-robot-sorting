@@ -19,7 +19,17 @@ A policy that sees the same layout with the same command learns positions instea
 
 ### 1.2 Commands
 
-Each generated command stores the model name and version, the prompt and the generation date. Duplicates and commands that point at the wrong object are filtered out. The human-written test set stays separate from all training data.
+Commands come from three sources ([task specification](task-spec.md#53-sources-of-commands)):
+
+1. built-in templates in `tools/twin/sorting_task.py`;
+2. templates written by a language model with `tools/data/generate_command_templates.py`, stored in `configs/command_templates.json` together with the model names, prompts and date;
+3. commands written by people outside the team, kept as a held-out test set.
+
+A template has one `{obj}` and one `{dest}` placeholder. The generator keeps only templates with exactly these two placeholders, 3–20 words, and the right script (Vietnamese diacritics for `vi`, ASCII for `en`), and drops duplicates. `twin_record.py` fills the placeholders with scene-unique references, so every (object, container) pair receives every template.
+
+```sh
+uv run python tools/data/generate_command_templates.py --per-kind 40
+```
 
 ## 2. Formats
 

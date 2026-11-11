@@ -25,8 +25,8 @@ external/
 third_party/
 
 # Datasets, checkpoints and training outputs (store outside Git)
-data/
-datasets/
+/data/
+/datasets/
 outputs/
 checkpoints/
 wandb/
