@@ -6,12 +6,13 @@ This protocol fixes the measurements before any experiment runs. Metrics and thr
 
 | Metric | Definition |
 |---|---|
-| Task success rate | Fraction of episodes that meet all success criteria in the [task specification](task-spec.md#4-success-criteria) |
-| Target selection rate | Fraction of episodes where the robot grasps the named object, regardless of placement |
+| Task success rate | Fraction of episodes that meet all success criteria in the [task specification](task-spec.md#6-success-criteria) |
+| Target selection rate | Fraction of episodes where the robot grasps an allowed object (the named object, or any class member for class commands), regardless of placement |
 | Grasp success rate | Fraction of episodes where the robot lifts an object off the table |
 | Episode time | From command receipt to gripper release |
 | Safety interventions | Number of actions the safety layer rejects per episode |
 | Failure phase | Phase in which a failed episode stopped: approach, grasp, lift, transport, place |
+| Sorting accuracy | In a sorting run, fraction of objects that end in the container of their class |
 
 In simulation, a script computes the metrics from simulator state. On the real robot, an operator fills an evaluation sheet and records video of every episode.
 
@@ -19,7 +20,7 @@ In simulation, a script computes the metrics from simulator state. On the real r
 
 | ID | Question | Conditions |
 |---|---|---|
-| E1 | How often does the fine-tuned VLA succeed in simulation? | Vietnamese vs English commands; training-set commands vs held-out human-written commands |
+| E1 | How often does the fine-tuned VLA succeed in simulation? | Vietnamese vs English commands; template commands vs held-out human-written commands; object vs class commands; criterion (colour, shape, size) |
 | E2 | How much does language input contribute? | Fine-tuned VLA vs ACT on identical scenes and seeds |
 | E3 | How much performance transfers to the real arm? | Trained on simulation only, real only, simulation + real |
 

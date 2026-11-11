@@ -50,6 +50,7 @@ FINGER_DEPTH = 0.03  # how far the fingertips may reach below a deep container's
 ALIGN_TOL = 0.003  # closed-loop place: correct only errors larger than this
 ALIGN_MAX = 0.04  # ... and never move more than this in one correction
 SPAWN_JITTER = 0.01
+ROUND_SEGMENTS = 16
 # Rotates SAPIEN's x-axis cylinder so that its axis points up (+z).
 UPRIGHT_Q = (math.sqrt(0.5), 0.0, -math.sqrt(0.5), 0.0)
 
@@ -135,6 +136,7 @@ class ContainerSpec:
     wall_height: float = 0.0
     slots: tuple[tuple[float, float], ...] = ((0.0, 0.0),)
     aliases: tuple[str, ...] = ()
+    outline: str = "rect"  # rect | round (round: inner_half[0] is the inner radius)
 
     @property
     def capacity(self) -> int:
@@ -164,6 +166,7 @@ class Level:
     objects: tuple[ObjectSpec, ...]
     containers: tuple[ContainerSpec, ...]
     examples: tuple[str, ...] = field(default_factory=tuple)
+    spawns: tuple[tuple[str, float, float], ...] = ()  # explicit (name, x, y); default: slots
 
     @property
     def object_names(self) -> tuple[str, ...]:
@@ -180,6 +183,8 @@ class Level:
         return next(c for c in self.containers if c.name == name)
 
     def spawn_xy(self) -> dict[str, tuple[float, float]]:
+        if self.spawns:
+            return {name: (x, y) for name, x, y in self.spawns}
         return {o.name: (OBJECT_SLOTS_X[i], OBJECT_ROW_Y) for i, o in enumerate(self.objects)}
 
 
@@ -658,6 +663,8 @@ def is_inside(
     dy = abs(xyz[1] - container.xy[1])
     hx, hy = container.inner_half
     resting = xyz[2] < table_top + container.wall_height + 0.1
+    if container.outline == "round":
+        return math.hypot(dx, dy) <= hx + INSIDE_MARGIN and resting
     return dx <= hx + INSIDE_MARGIN and dy <= hy + INSIDE_MARGIN and resting
 
 
@@ -795,9 +802,24 @@ def align_correction(
 def container_boxes(
     container: ContainerSpec,
 ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
-    """Local (center, half_size) boxes of a tray/bin: floor plus four walls, origin on the table."""
+    """Local (center, half_size) boxes of a tray/bin: floor plus walls, origin on the table.
+
+    A round container's wall is approximated by ROUND_SEGMENTS boxes on its circumference
+    (axis-aligned boxes, so the planner sees a slightly larger, conservative ring).
+    """
     hx, hy = container.inner_half
     h, t = container.wall_height, WALL_T
+    if container.outline == "round":
+        r = hx + t / 2
+        seg = math.pi * r / ROUND_SEGMENTS + t / 2
+        boxes = [((0.0, 0.0, FLOOR_T / 2), (hx + t, hy + t, FLOOR_T / 2))]
+        for i in range(ROUND_SEGMENTS):
+            a = 2 * math.pi * i / ROUND_SEGMENTS
+            cx, cy = r * math.cos(a), r * math.sin(a)
+            ex = abs(math.cos(a)) * t / 2 + abs(math.sin(a)) * seg
+            ey = abs(math.sin(a)) * t / 2 + abs(math.cos(a)) * seg
+            boxes.append(((cx, cy, FLOOR_T + h / 2), (ex, ey, h / 2)))
+        return boxes
     boxes = [((0.0, 0.0, FLOOR_T / 2), (hx + t, hy + t, FLOOR_T / 2))]
     zc = FLOOR_T + h / 2
     for sx in (-1, 1):
@@ -1031,9 +1053,34 @@ def build_container(scene, container: ContainerSpec, table_top: float):
     builder = scene.create_actor_builder()
     builder.set_physx_body_type("static")
     physical = scene.default_physical_material
+    if container.outline == "round":
+        return _build_round_container(builder, container, table_top, look, physical, name)
     for center, half in container_boxes(container):
         pose = sapien.Pose(list(center))
         builder.add_box_collision(pose=pose, half_size=list(half), material=physical)
         builder.add_box_visual(pose=pose, half_size=list(half), material=look)
+    builder.set_initial_pose(sapien.Pose([*container.xy, table_top]))
+    return builder.build(name=name)
+
+
+def _build_round_container(
+    builder, container: ContainerSpec, table_top: float, look, physical, name
+):
+    """Cylindrical floor plus ROUND_SEGMENTS wall pieces rotated tangent to the circle."""
+    import sapien
+
+    radius, h, t = container.inner_half[0], container.wall_height, WALL_T
+    up = sapien.Pose([0.0, 0.0, FLOOR_T / 2], list(UPRIGHT_Q))
+    builder.add_cylinder_collision(
+        pose=up, radius=radius + t, half_length=FLOOR_T / 2, material=physical
+    )
+    builder.add_cylinder_visual(pose=up, radius=radius + t, half_length=FLOOR_T / 2, material=look)
+    r = radius + t / 2
+    half = [t / 2, math.pi * r / ROUND_SEGMENTS + t / 2, h / 2]
+    for i in range(ROUND_SEGMENTS):
+        a = 2 * math.pi * i / ROUND_SEGMENTS
+        pose = sapien.Pose([r * math.cos(a), r * math.sin(a), FLOOR_T + h / 2], list(yaw_quat(a)))
+        builder.add_box_collision(pose=pose, half_size=half, material=physical)
+        builder.add_box_visual(pose=pose, half_size=half, material=look)
     builder.set_initial_pose(sapien.Pose([*container.xy, table_top]))
     return builder.build(name=name)

@@ -16,8 +16,8 @@ Constraints:
 
 | Model | Size | Language backbone | Notes |
 |---|---|---|---|
-| SmolVLA | ~0.45 B parameters | SmolLM2, trained mostly on English | Pretrained on LeRobot community data (SO-100 arms) |
-| Evo-1 | ~0.77 B parameters | Qwen2.5, multilingual | Available in LeRobot |
+| SmolVLA | ~0.45 B parameters | SmolVLM with the SmolLM2 language model, trained mostly on English | Pretrained on LeRobot community data (SO-100 arms) ([arXiv:2506.01844](https://arxiv.org/abs/2506.01844)) |
+| Evo-1 | 0.77 B parameters | Native multimodal VLM; language coverage to be measured | No robot-data pretraining; code and weights released by the authors ([arXiv:2511.04555](https://arxiv.org/abs/2511.04555)); LeRobot support to be checked |
 
 ACT serves as the baseline in every case and is not a candidate for the main model.
 
