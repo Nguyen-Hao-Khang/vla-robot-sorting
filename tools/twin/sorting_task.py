@@ -22,9 +22,11 @@ into a ``twin_scene.Level`` that the simulator can build.
 from __future__ import annotations
 
 import itertools
+import json
 import math
 import random
 from dataclasses import dataclass
+from pathlib import Path
 
 import twin_scene as ts
 
@@ -312,12 +314,16 @@ def make_command(
     class_share: float = 0.3,
     available: set[str] | None = None,
     open_containers: set[str] | None = None,
+    bank: dict[str, dict[str, list[str]]] | None = None,
+    bank_share: float = 0.7,
 ) -> Command | None:
     """Sample one object or class command with a uniquely identified destination.
 
     ``available`` limits the picks to objects still on the table and ``open_containers`` to
     containers with free room; references stay unique among all scene objects and containers.
-    Returns None when no valid command exists.
+    ``bank`` holds generated templates (``load_template_bank``); a template from it is used
+    with probability ``bank_share``, otherwise a built-in one. Returns None when no valid
+    command exists.
     """
     on_table = {o.name for o in scene.objects} if available is None else set(available)
     dests = [c for c in scene.containers if open_containers is None or c.name in open_containers]
@@ -341,12 +347,25 @@ def make_command(
         reference = rng.choice(object_references(scene, target.name))
         targets = (target.name,)
         obj_phrase = describe_object(reference, language, definite=True)
-        if language == "en":
-            obj_phrase = obj_phrase[len("the ") :]
         templates = VI_OBJECT_TEMPLATES if language == "vi" else EN_OBJECT_TEMPLATES
         kind = "object"
-    text = rng.choice(templates).format(obj=obj_phrase, dest=dest_phrase)
+    generated = (bank or {}).get(language, {}).get(kind, [])
+    if generated and rng.random() < bank_share:
+        if language == "en":
+            dest_phrase = f"the {dest_phrase}"
+        text = rng.choice(generated).format(obj=obj_phrase, dest=dest_phrase)
+    else:
+        if language == "en" and kind == "object":
+            obj_phrase = obj_phrase[len("the ") :]
+        text = rng.choice(templates).format(obj=obj_phrase, dest=dest_phrase)
     return Command(text, language, kind, targets, dest.name, reference, container_ref)
+
+
+def load_template_bank(path: Path) -> dict[str, dict[str, list[str]]]:
+    """Generated templates from configs/command_templates.json (empty if the file is absent)."""
+    if not path.is_file():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8")).get("templates", {})
 
 
 def to_level(scene: Scene, number: int = 0) -> ts.Level:

@@ -19,7 +19,17 @@ A policy that sees the same layout with the same command learns positions instea
 
 ### 1.2 Commands
 
-Each generated command stores the model name and version, the prompt and the generation date. Duplicates and commands that point at the wrong object are filtered out. The human-written test set stays separate from all training data.
+Commands come from three sources ([task specification](task-spec.md#53-sources-of-commands)):
+
+1. built-in templates in `tools/twin/sorting_task.py`;
+2. templates written by a language model with `tools/data/generate_command_templates.py`, stored in `configs/command_templates.json` together with the model names, prompts and date;
+3. commands written by people outside the team, kept as a held-out test set.
+
+A template has one `{obj}` and one `{dest}` placeholder. The generator keeps only templates with exactly these two placeholders, 3–20 words, and the right script (Vietnamese diacritics for `vi`, ASCII for `en`), and drops duplicates. `twin_record.py` fills the placeholders with scene-unique references, so every (object, container) pair receives every template.
+
+```sh
+uv run python tools/data/generate_command_templates.py --per-kind 40
+```
 
 ## 2. Formats
 
@@ -38,7 +48,7 @@ The sampling rate defaults to 15 Hz (`configs/twin_cameras.json`).
 python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --task sorting --seed 0 --languages en,vi
 ```
 
-`--task sorting` (default) builds a new procedural scene from [the task specification](task-spec.md) for every layout and records `--episodes-per-layout` commands in it; `meta.json` stores the command kind, the object and container references, the allowed targets and the full scene. Each episode draws its command language uniformly from `--languages`. `--task levels` records the fixed scene levels instead. Language-model paraphrases (plan item 1.4) will extend the template commands.
+`--task sorting` (default) builds a new procedural scene from [the task specification](task-spec.md) for every layout and records `--episodes-per-layout` commands in it; `meta.json` stores the command kind, the object and container references, the allowed targets and the full scene. Each episode draws its command language uniformly from `--languages`. `--task levels` records the fixed scene levels instead. With `configs/command_templates.json` present, 70% of commands use its language-model templates and the rest use the built-in templates.
 
 ### 2.2 LeRobot dataset (`lerobot_convert.py`)
 

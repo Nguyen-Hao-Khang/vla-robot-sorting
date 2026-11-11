@@ -264,6 +264,8 @@ def scene_state(twin, scene: st.Scene) -> tuple[set[str], set[str]]:
 
 def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[int, int]:
     """Procedural sorting scenes: rebuild per layout, several commands per layout."""
+    bank = st.load_template_bank(args.templates)
+    print(f"generated templates: {sum(len(v) for k in bank.values() for v in k.values())}")
     kept = attempted = 0
     while kept < args.episodes and attempted < args.episodes * 3:
         scene = st.sample_scene(rng)
@@ -281,7 +283,13 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
                 break
             available, open_containers = scene_state(twin, scene)
             command = st.make_command(
-                scene, rng, rng.choice(languages), args.class_share, available, open_containers
+                scene,
+                rng,
+                rng.choice(languages),
+                args.class_share,
+                available,
+                open_containers,
+                bank,
             )
             if command is None:
                 break
@@ -369,6 +377,12 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.3,
         help="sorting task: fraction of class commands (any member of the class is correct)",
+    )
+    parser.add_argument(
+        "--templates",
+        type=Path,
+        default=Path(__file__).resolve().parents[2] / "configs" / "command_templates.json",
+        help="generated command templates (tools/data/generate_command_templates.py), if present",
     )
     parser.add_argument(
         "--languages",
