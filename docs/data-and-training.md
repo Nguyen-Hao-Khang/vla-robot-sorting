@@ -35,10 +35,10 @@ Each generated command stores the model name and version, the prompt and the gen
 The sampling rate defaults to 15 Hz (`configs/twin_cameras.json`).
 
 ```sh
-python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --levels 2,5 --seed 0 --languages en,vi
+python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --task sorting --seed 0 --languages en,vi
 ```
 
-Each episode draws its command language uniformly from `--languages`. Vietnamese commands use fixed templates and a word-by-word name translation (`vietnamese_name` in `twin_record.py`); objects without a translation fall back to English. Language-model paraphrases (plan item 1.4) will replace the templates.
+`--task sorting` (default) builds a new procedural scene from [the task specification](task-spec.md) for every layout and records `--episodes-per-layout` commands in it; `meta.json` stores the command kind, the object and container references, the allowed targets and the full scene. Each episode draws its command language uniformly from `--languages`. `--task levels` records the fixed scene levels instead. Language-model paraphrases (plan item 1.4) will extend the template commands.
 
 ### 2.2 LeRobot dataset (`lerobot_convert.py`)
 
@@ -69,7 +69,7 @@ Turing GPUs (GTX 1660 Ti, Kaggle T4) lack hardware bf16; use fp16 or fp32 there.
 
 ```sh
 conda activate RoboTwin
-EPISODES=80 LEVELS=2,5 bash tools/train/kaggle_overnight.sh
+EPISODES=80 bash tools/train/kaggle_overnight.sh
 ```
 
 It needs a Kaggle API token in `~/.kaggle/kaggle.json`.

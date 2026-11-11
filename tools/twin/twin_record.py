@@ -36,6 +36,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import sorting_task as st
 import twin_scene as ts
 
 RAW_FORMAT_VERSION = 1
@@ -244,6 +245,98 @@ def cv2_saver(quality: int = 92) -> Callable[[Path, np.ndarray], None]:
     return save
 
 
+def scene_state(twin, scene: st.Scene) -> tuple[set[str], set[str]]:
+    """Objects still on the table and containers with free room, from the simulator."""
+    xyz = twin.objects_xyz()
+    level = twin.level
+    available = {
+        o.name
+        for o in scene.objects
+        if ts.location_of(level, xyz[o.name], twin.table_top) == "table"
+    }
+    open_containers = {
+        c.name
+        for c in level.containers
+        if len(ts.occupants(level, c, xyz, twin.table_top)) < c.capacity
+    }
+    return available, open_containers
+
+
+def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[int, int]:
+    """Procedural sorting scenes: rebuild per layout, several commands per layout."""
+    kept = attempted = 0
+    while kept < args.episodes and attempted < args.episodes * 3:
+        scene = st.sample_scene(rng)
+        twin.custom_level = st.to_level(scene)
+        print(
+            f"Building sorting scene ({len(scene.objects)} objects, {len(scene.containers)} containers)...",
+            flush=True,
+        )
+        twin.setup()
+        recorder = FrameRecorder(lambda: twin.record_frame(size), twin.step_dt(), fps)
+        recorder.attach(twin.task)
+        spawns = twin.reset_layout(rng)
+        for _ in range(args.episodes_per_layout):
+            if kept >= args.episodes:
+                break
+            available, open_containers = scene_state(twin, scene)
+            command = st.make_command(
+                scene, rng, rng.choice(languages), args.class_share, available, open_containers
+            )
+            if command is None:
+                break
+            obj = rng.choice(command.targets)
+            attempted += 1
+            recorder.start()
+            outcome = twin.pick_and_place(obj, command.destination, echo=lambda _m: None)
+            recorder.stop()
+            states, actions, times = recorder.arrays()
+            print(
+                f"[{attempted}] {command.kind}: {command.text} -> {'ok' if outcome.ok else 'FAILED'} ({len(states)} frames)",
+                flush=True,
+            )
+            meta = {
+                "task": command.text,
+                "language": command.language,
+                "command_kind": command.kind,
+                "object_reference": dict(command.object_reference),
+                "container_reference": list(command.container_reference),
+                "targets": list(command.targets),
+                "object": obj,
+                "destination": command.destination,
+                "scene": {
+                    "objects": [
+                        {"name": o.name, "shape": o.shape, "colour": o.colour, "size": o.size}
+                        for o in scene.objects
+                    ],
+                    "containers": [
+                        {
+                            "name": c.name,
+                            "colour": c.colour,
+                            "outline": c.outline,
+                            "depth": c.depth,
+                            "position": c.position,
+                        }
+                        for c in scene.containers
+                    ],
+                },
+                "success": outcome.ok,
+                "summary": outcome.summary,
+                "fps": fps,
+                "seed": args.seed,
+                "spawns": {k: list(v) for k, v in spawns.items()},
+                "image_size": list(size),
+                "source": "robotwin_twin_scripted_expert",
+            }
+            if outcome.ok or args.keep_failures:
+                write_episode(args.out, index, states, actions, times, recorder.images, meta, save)
+                index += 1
+                kept += outcome.ok
+            if not outcome.ok:
+                break
+    return kept, attempted
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -265,6 +358,18 @@ def main(argv: list[str] | None = None) -> int:
         "--fps", type=float, default=0.0, help="0 = configs/twin_cameras.json record.fps"
     )
     parser.add_argument("--keep-failures", action="store_true")
+    parser.add_argument(
+        "--task",
+        choices=("sorting", "levels"),
+        default="sorting",
+        help="sorting: procedural scenes from docs/task-spec.md; levels: the fixed scene levels",
+    )
+    parser.add_argument(
+        "--class-share",
+        type=float,
+        default=0.3,
+        help="sorting task: fraction of class commands (any member of the class is correct)",
+    )
     parser.add_argument(
         "--languages",
         default="en,vi",
@@ -297,6 +402,13 @@ def main(argv: list[str] | None = None) -> int:
     twin = Twin(args.robotwin_root.resolve(), args.seed, 0, "free", levels[0], headless=True)
     recorder: FrameRecorder | None = None
     current_level = None
+    if args.task == "sorting":
+        kept, attempted = record_sorting(twin, args, rng, languages, size, fps, save, index)
+        elapsed = time.perf_counter() - started
+        print(
+            f"RECORD_DONE kept={kept} attempted={attempted} out={args.out} elapsed_s={elapsed:.0f}"
+        )
+        return 0 if kept else 4
     while kept < args.episodes and attempted < args.episodes * 3:
         level = rng.choice(levels)
         if level != current_level:

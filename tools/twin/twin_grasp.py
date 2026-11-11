@@ -314,6 +314,15 @@ def _wall_room(container: ts.ContainerSpec | None, centre_xy, finger_w, half_wid
     hx, hy = container.inner_half
     dx, dy = centre_xy[0] - container.xy[0], centre_xy[1] - container.xy[1]
     room = math.inf
+    if container.outline == "round":
+        norm = math.hypot(finger_w[0], finger_w[1]) or 1.0
+        for sign in (1.0, -1.0):
+            fx, fy = sign * finger_w[0] / norm, sign * finger_w[1] / norm
+            along = dx * fx + dy * fy
+            disc = along * along - (dx * dx + dy * dy) + hx * hx
+            t = -along + math.sqrt(max(disc, 0.0))
+            room = min(room, t - half_width)
+        return room
     for sign in (1.0, -1.0):
         fx, fy = sign * finger_w[0], sign * finger_w[1]
         t = math.inf

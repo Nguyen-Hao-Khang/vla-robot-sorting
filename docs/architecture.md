@@ -10,7 +10,7 @@ At each control step $t$ the system receives:
 
 A policy $\pi(a_{t:t+H} \mid I^w_t, I^s_t, q_t, \ell)$ outputs a chunk of $H$ joint-position targets. The episode succeeds when the object named in $\ell$ rests in the container named in $\ell$ ([task specification](task-spec.md)).
 
-Scope: objects are identified by colour and shape. Sorting by semantic category is an extension.
+Scope: objects are identified by shape, size and colour (required criteria); printed labels and semantic categories are extensions ([task specification](task-spec.md)).
 
 ## 2. Components
 

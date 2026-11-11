@@ -28,7 +28,7 @@ Language-conditioned object sorting on the Panthera-HT robot arm with a small vi
 |---|---|
 | Input | Wrist-camera and workspace-camera RGB images (320×240), joint positions of the 6-DoF arm and the gripper, a free-form command in Vietnamese or English |
 | Output | A chunk of joint-position targets, executed at 15 Hz |
-| Task | Pick the object identified by colour and/or shape and place it in the identified container ([task specification](docs/task-spec.md)) |
+| Task | Sort wooden blocks by colour, shape or size: pick the named object (or any member of the named class) and place it in the named container ([task specification](docs/task-spec.md)) |
 | Robot | Panthera-HT (HighTorque Robotics), 6 joints, two-finger gripper, 860 mm reach |
 | Constraints | Inference on a 6 GB GPU without bf16; 30–50 real demonstrations; Vietnamese is rare in public robot datasets; the real arm must run behind a safety layer |
 
@@ -40,7 +40,7 @@ Language-conditioned object sorting on the Panthera-HT robot arm with a small vi
 4. Integrate the model with the arm into a complete sorting application.
 5. Evaluate recognition, language understanding and manipulation reliability, in simulation and on the real arm.
 
-Sorting by semantic category (for example "the edible items") is an extension, attempted only after the attribute-level task works.
+Sorting by printed labels and by semantic category (for example "drinks") is an extension in simulation, attempted only after the geometry and colour criteria work.
 
 ## Method
 
@@ -73,7 +73,8 @@ Details: [architecture](docs/architecture.md), [data and training](docs/data-and
 | Component | State |
 |---|---|
 | Panthera-HT scenes in RoboTwin (7 scene levels) | Working |
-| Scripted expert and demonstration recorder | Working; layout randomisation needs extending |
+| Scripted expert and demonstration recorder | Working on the fixed levels |
+| Procedural sorting scenes and bilingual template commands | Implemented and unit-tested; first simulator run pending |
 | Conversion to LeRobot format | Working |
 | Policy server and simulator client | Implemented; not yet run with a fine-tuned checkpoint |
 | Bilingual command generation | Not started |

@@ -709,6 +709,7 @@ class Twin:
         self.place_constrain = place_constrain
         self.level_number = level
         self.level: ts.Level = ts.LEVELS[level]
+        self.custom_level: ts.Level | None = None  # procedural scene (sorting_task) if set
         self.headless = headless
         self.task = None
         self.actors: dict[str, object] = {}
@@ -961,7 +962,7 @@ class Twin:
                 scene.remove_entity(entity)
             except Exception:  # park it far away if removal is not supported
                 entity.set_pose(sapien.Pose([0.0, 3.0, 0.05]))
-        self.level = ts.LEVELS[self.level_number]
+        self.level = self.custom_level or ts.LEVELS[self.level_number]
         for container in self.level.containers:
             ts.build_container(scene, container, self.table_top)
         self.actors = {}
