@@ -48,7 +48,7 @@ The sampling rate defaults to 15 Hz (`configs/twin_cameras.json`).
 python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --task sorting --seed 0 --languages en,vi
 ```
 
-`--task sorting` (default) builds a new procedural scene from [the task specification](task-spec.md) for every layout and records `--episodes-per-layout` commands in it; `meta.json` stores the command kind, the object and container references, the allowed targets and the full scene. Each episode draws its command language uniformly from `--languages`. `--task levels` records the fixed scene levels instead. Language-model paraphrases (plan item 1.4) will extend the template commands.
+`--task sorting` (default) builds a new procedural scene from [the task specification](task-spec.md) for every layout and records `--episodes-per-layout` commands in it; `meta.json` stores the command kind, the object and container references, the allowed targets and the full scene. Each episode draws its command language uniformly from `--languages`. `--task levels` records the fixed scene levels instead. With `configs/command_templates.json` present, 70% of commands use its language-model templates and the rest use the built-in templates.
 
 ### 2.2 LeRobot dataset (`lerobot_convert.py`)
 

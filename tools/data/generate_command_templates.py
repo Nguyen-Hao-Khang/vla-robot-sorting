@@ -35,6 +35,8 @@ LANGUAGES = ("en", "vi")
 MAX_ROUNDS = 4
 VI_CHARS = set("ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
 PLACEHOLDER = re.compile(r"\{[^{}]*\}")
+# {obj} already carries its article ("the red cube", "một vật màu đỏ").
+ARTICLES = {"a", "an", "the", "một", "cái", "các", "những"}
 
 SYSTEM = (
     "You write instructions that a person would say to a robot arm sorting toy blocks into "
@@ -100,6 +102,9 @@ def validate_template(text: str, language: str) -> str | None:
         return "not english"
     if "\n" in text:
         return "multiline"
+    before = text[: text.find("{obj}")].split()
+    if before and before[-1].lower() in ARTICLES:
+        return "article before {obj}"
     return None
 
 

@@ -1,7 +1,8 @@
 # Task specification
 
-- Version: 1.0
+- Version: 1.1
 - Status: frozen on 12 November 2026. Changes require a new version and a new dataset version.
+- 1.1 (12 November 2026, before any dataset was recorded): section 5.3 names the language-model template file.
 - Implementation: `tools/twin/sorting_task.py`
 
 ## 1. Sorting criteria
@@ -74,7 +75,7 @@ The container is named by one attribute that is unique among the containers in t
 | Source | Use |
 |---|---|
 | Templates in `sorting_task.py` (4 object and 3 class templates per language) | Training data, baseline |
-| Language-model paraphrases of template commands | Training data |
+| Language-model templates in `configs/command_templates.json` (about 40 per language and form) | Training data |
 | Commands written by people outside the team | Held-out test set only |
 
 Examples generated from the templates:

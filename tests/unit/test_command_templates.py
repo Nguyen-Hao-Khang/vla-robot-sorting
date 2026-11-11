@@ -28,6 +28,19 @@ def test_validate_template() -> None:
     assert gen.validate_template("{obj} {dest}", "en") == "length"
     assert gen.validate_template("dat {obj} vao {dest} nhe", "vi") == "not vietnamese"
     assert gen.validate_template("đặt {obj} vào {dest}", "en") == "not english"
+    assert gen.validate_template("pick up the {obj} into {dest}", "en") == "article before {obj}"
+    assert gen.validate_template("lấy một {obj} đặt vào {dest}", "vi") == "article before {obj}"
+
+
+def test_committed_bank_is_valid() -> None:
+    bank = json.loads((ROOT / "configs/command_templates.json").read_text(encoding="utf-8"))
+    for lang in gen.LANGUAGES:
+        for kind in gen.KINDS:
+            templates = bank["templates"][lang][kind]
+            assert len(templates) >= 30, (lang, kind)
+            assert len({gen.normalise(t) for t in templates}) == len(templates)
+            for text in templates:
+                assert gen.validate_template(text, lang) is None, text
 
 
 def test_prompts_cover_languages_and_kinds() -> None:
