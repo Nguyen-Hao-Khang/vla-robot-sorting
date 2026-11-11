@@ -47,3 +47,28 @@ Each results table records:
 - the path to the raw evaluation log.
 
 A script in this repository generates every figure and table from the raw logs. Numbers are never copied by hand.
+
+## 5. Running a simulated evaluation
+
+`tools/twin/twin_eval.py` runs seeded episodes in RoboTwin with the scripted expert or a learned policy served by `tools/twin/policy_bridge.py`, and writes one JSON line per episode.
+
+```sh
+# RoboTwin environment
+python tools/twin/twin_eval.py run --executor expert --episodes 30 --seed 1 --language en \
+    --out results/expert_en.jsonl
+python tools/twin/twin_eval.py run --executor policy --policy-server 127.0.0.1:5555 \
+    --checkpoint smolvla_v1 --episodes 30 --seed 1 --language vi --command-source generated \
+    --out results/smolvla_vi_generated.jsonl
+# any environment
+python tools/twin/twin_eval.py summarise results/*.jsonl --by executor,language,command_kind
+```
+
+- **Pairing.** Episode `i` of a run with seed `S` uses the episode seed `S × 100000 + i`. The scene, the layout, the target, the destination and the references depend only on that seed, so two runs with the same seed differ only in the condition under test (language, command source, executor).
+- **Command sources.** `builtin` uses the templates in `sorting_task.py`, `generated` the language-model templates in `configs/command_templates.json`, `human` the held-out file given with `--human-commands` (same format).
+- **Judging.** Object locations are read from the simulator before and after the episode and checked against [section 6 of the task specification](task-spec.md#6-success-criteria). Episodes longer than 60 s fail. Policies act at 15 Hz, so a policy episode has at most 900 actions.
+- **Safety layer in simulation.** Policy actions pass a stand-in filter: joint targets outside the joint limits are clamped and counted as interventions; a step larger than 0.35 rad from the current joint state stops the episode.
+- **Target selection and grasping.** An object counts as lifted when it rises 3 cm above its resting height. The first lifted object decides target selection.
+- **Failure phase.** For the expert, the failed executor step mapped to approach, grasp, lift, transport or place. For a policy, inferred from what was lifted: nothing or a wrong object (grasp), an allowed object that did not reach any container (transport), an allowed object in a container but the episode still failed (place). Safety stops and timeouts are reported as such.
+- **Resume.** Rerunning with the same `--out` skips episodes already in the file.
+
+Each record holds the commit, the checkpoint label, the command source and the seeds, which covers the traceability items of section 4.
