@@ -20,7 +20,7 @@ In simulation, a script computes the metrics from simulator state. On the real r
 
 | ID | Question | Conditions |
 |---|---|---|
-| E1 | How often does the fine-tuned VLA succeed in simulation? | Vietnamese vs English commands; template commands vs held-out human-written commands; object vs class commands; criterion (colour, shape, size) |
+| E1 | How often does the fine-tuned VLA succeed in simulation? | Vietnamese vs English commands; training-style commands vs held-out test commands; object vs class commands; criterion (colour, shape, size) |
 | E2 | How much does language input contribute? | Fine-tuned VLA vs ACT on identical scenes and seeds |
 | E3 | How much performance transfers to the real arm? | Trained on simulation only, real only, simulation + real |
 
@@ -64,7 +64,7 @@ python tools/twin/twin_eval.py summarise results/*.jsonl --by executor,language,
 ```
 
 - **Pairing.** Episode `i` of a run with seed `S` uses the episode seed `S × 100000 + i`. The scene, the layout, the target, the destination and the references depend only on that seed, so two runs with the same seed differ only in the condition under test (language, command source, executor).
-- **Command sources.** `builtin` uses the templates in `sorting_task.py`, `generated` the language-model templates in `configs/command_templates.json`, `human` the held-out file given with `--human-commands` (same format).
+- **Command sources.** `builtin` uses the templates in `sorting_task.py`, `generated` the language-model templates in `configs/command_templates.json`, `human` the held-out test commands in `configs/test_commands_v1.csv`. With `human`, the episodes come from the file: each row names its episode seed, and only rows marked `Reviewed=yes` are used. A template run with `--seed 9` covers the same scenes as the file, so the two command sources are paired.
 - **Judging.** Object locations are read from the simulator before and after the episode and checked against [section 6 of the task specification](task-spec.md#6-success-criteria). Episodes longer than 60 s fail. Policies act at 15 Hz, so a policy episode has at most 900 actions.
 - **Safety layer in simulation.** Policy actions pass a stand-in filter: joint targets outside the joint limits are clamped and counted as interventions; a step larger than 0.35 rad from the current joint state stops the episode.
 - **Target selection and grasping.** An object counts as lifted when it rises 3 cm above its resting height. The first lifted object decides target selection.

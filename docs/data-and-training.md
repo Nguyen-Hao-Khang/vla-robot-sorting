@@ -6,7 +6,7 @@
 |---|---|---|
 | Simulated demonstrations | Scripted expert on randomised scenes, recorded by `tools/twin/twin_record.py` | 500–1,000 successful episodes |
 | Training commands | Language model paraphrases in Vietnamese and English for each (object, container) pair | ≥ 30 per pair and language |
-| Test commands | Written by people outside the team through a form; never used for training | 100–200 |
+| Test commands | One free command per evaluation episode, drafted with `tools/data/draft_test_commands.py` and edited and approved by the team; never used for training | 100–200 |
 | Real demonstrations | Leader–follower teleoperation on the Panthera-HT | 30–50 episodes |
 
 ### 1.1 Scene randomisation
@@ -23,7 +23,7 @@ Commands come from three sources ([task specification](task-spec.md#53-sources-o
 
 1. built-in templates in `tools/twin/sorting_task.py`;
 2. templates written by a language model with `tools/data/generate_command_templates.py`, stored in `configs/command_templates.json` together with the model names, prompts and date;
-3. commands written by people outside the team, kept as a held-out test set.
+3. held-out test commands in `configs/test_commands_v1.csv`, edited and approved row by row by the team and used only for evaluation.
 
 A template has one `{obj}` and one `{dest}` placeholder. The generator keeps only templates with exactly these two placeholders, 3–20 words, and the right script (Vietnamese diacritics for `vi`, ASCII for `en`), and drops duplicates. `twin_record.py` fills the placeholders with scene-unique references, so every (object, container) pair receives every template.
 

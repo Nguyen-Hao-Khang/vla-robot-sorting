@@ -45,7 +45,7 @@ At each checkpoint the team checks the condition. If it fails, the fallback appl
 | 1.2 | Data | Freeze the task specification | `docs/task-spec.md` | Merged with status "frozen" | None | 10 Nov | 13 Nov |
 | 1.3 | Simulation | Randomise scenes during recording | `tools/twin/twin_record.py`, tests | 50 demonstrations regenerate identically from a seed | 1.2 | 12 Nov | 19 Nov |
 | 1.4 | Data | Bilingual command generator | Script and command files | ≥ 30 commands per pair and language; tests pass | 1.2 | 12 Nov | 19 Nov |
-| 1.5 | Data | Human-written test commands | Test command file | 100–200 commands, separate from training data | 1.2 | 13 Nov | 23 Nov |
+| 1.5 | Data | Held-out test commands | `configs/test_commands_v1.csv` | 100–200 commands, separate from training data | 1.2 | 13 Nov | 23 Nov |
 | 1.6 | Model | Training environment | Updated `docs/getting-started.md` | SmolVLA and Evo-1 each run 100 training steps | None | 10 Nov | 16 Nov |
 | 1.7 | Model | Compare and select the base VLA | ADR 0005 with measurements | ADR 0005 accepted | 1.3, 1.6, 1.8 | 17 Nov | 23 Nov |
 | 1.8 | Evaluation | Automated simulation evaluation script | Script, tests | Runs N seeded episodes for a policy or the expert, writes JSONL, reports metrics with Wilson intervals | 1.2 | 13 Nov | 21 Nov |
