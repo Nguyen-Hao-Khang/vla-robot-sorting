@@ -1,12 +1,5 @@
-"""Stable project-owned interfaces shared across subsystem implementations."""
+"""Data types shared by the motion and safety layers."""
 
-from .manipulation import (
-    GripperCommand,
-    GripperExecutionResult,
-    ManipulationPhase,
-    ManipulationSignal,
-    ManipulationTransition,
-)
 from .models import GraspTarget, Pose6D, SemanticSkill, SkillCommand
 from .motion import (
     ExecutionFeedback,
@@ -28,26 +21,17 @@ from .motion import (
     TrajectoryWaypoint,
     WorkspaceBounds,
 )
-from .simulation import CameraFrame, CameraRole, GripperState, SimulatorObservation
 
 __all__ = [
-    "CameraFrame",
-    "CameraRole",
     "ExecutionFeedback",
     "ExecutionSegment",
     "ExecutionStatus",
     "GraspTarget",
-    "GripperCommand",
-    "GripperExecutionResult",
-    "GripperState",
     "IKResult",
     "IKSolution",
     "JointLimits",
     "JointPath",
     "JointState",
-    "ManipulationPhase",
-    "ManipulationSignal",
-    "ManipulationTransition",
     "MotionFailure",
     "MotionFailureCode",
     "MotionGoal",
@@ -57,7 +41,6 @@ __all__ = [
     "SafetyReport",
     "SafetyViolation",
     "SemanticSkill",
-    "SimulatorObservation",
     "SkillCommand",
     "Trajectory",
     "TrajectoryWaypoint",

@@ -1,26 +1,28 @@
-# ADR 0004: Lớp an toàn bắt buộc giữa mô hình và robot thật
+# ADR 0004: A mandatory safety layer between the policy and the real arm
 
-- Trạng thái: Chấp nhận
-- Ngày: 2026-10-27
+- Status: Accepted
+- Date: 2026-10-27
 
-## Bối cảnh
+## Context
 
-Mô hình VLA có thể xuất hành động bất kỳ, kể cả vượt giới hạn khớp, ra ngoài bàn hoặc di chuyển quá nhanh. Panthera-HT có tải 3,5 kg và sải tay 860 mm, đủ để gây hư hỏng hoặc chấn thương.
+A VLA can output any action, including joint targets beyond the limits, positions off the table, or fast motions. The Panthera-HT carries 3.5 kg at up to 860 mm, enough to damage equipment or injure people.
 
-## Quyết định
+## Decision
 
-Mọi hành động gửi xuống robot thật phải đi qua lớp an toàn (`src/vla_robot_sorting/safety/`). Lớp này:
+Every action sent to the real arm passes the safety layer in `src/vla_robot_sorting/safety/`. The layer:
 
-1. từ chối vị trí khớp ngoài giới hạn của nhà sản xuất;
-2. từ chối vị trí đầu kẹp ra ngoài hộp vùng làm việc khai báo trong cấu hình;
-3. giới hạn vận tốc khớp;
-4. dừng robot khi mất tín hiệu từ policy quá thời gian chờ;
-5. luôn cho phép dừng khẩn cấp bằng nút cứng.
+1. rejects joint positions outside the manufacturer limits;
+2. rejects gripper positions outside a configured workspace box;
+3. limits joint velocity, acceleration and jerk;
+4. stops the arm when the policy stays silent beyond a timeout;
+5. leaves a hardware emergency stop in reach at all times.
 
-Lớp an toàn cũng chạy trong mô phỏng để số lần chặn được đo giống nhau ở hai môi trường.
+The same layer runs in simulation, so rejection counts are comparable across both settings.
 
-## Hệ quả
+Implemented today: items 1 and 3 (`joint_limits.py`). Items 2 and 4 are work item 3.2 in the [project plan](../project-plan.md).
 
-- Không ai được nới ngưỡng an toàn để một lần chạy qua được (CONTRIBUTING mục 5).
-- Mỗi thay đổi ở lớp an toàn phải có test cho trường hợp bị chặn.
-- Số lần lớp an toàn chặn là một chỉ số đánh giá (`docs/evaluation-protocol.md`).
+## Consequences
+
+- Nobody relaxes a threshold to make a run pass ([contributing](../../CONTRIBUTING.md#3-code)).
+- Every change to the layer comes with a test for the rejected case.
+- Safety interventions are an evaluation metric ([evaluation protocol](../evaluation-protocol.md)).

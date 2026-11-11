@@ -21,9 +21,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
       - name: Lint
-        run: uv run ruff check .
+        run: uv run --no-sync pre-commit run --all-files --show-diff-on-failure
       - name: Test
-        run: uv run pytest -q
+        run: uv run --no-sync pytest -q
 
   report:
     name: Build report

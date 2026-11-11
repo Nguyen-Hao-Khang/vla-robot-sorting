@@ -6,8 +6,8 @@ or SAPIEN; the ``build_*`` functions import SAPIEN lazily and are only used insi
 RoboTwin conda environment.
 
 Frame: RoboTwin world, metres. The robot base sits behind the table at negative y facing +y;
-x<0 is the operator's left. Objects stand in one row at y=OBJECT_ROW_Y, 12 cm apart (10 cm
-still let the arm brush neighbours in the v10 runs); containers stand in a row closer to the
+x<0 is the operator's left. Objects stand in one row at y=OBJECT_ROW_Y, 12 cm apart (at 10 cm
+the arm brushes neighbours); containers stand in a row closer to the
 robot (y=CONTAINER_ROW_Y) with about 7 cm of free table between the two rows, the shallow
 tray on the left and the deep bin pushed out to the right so the arm does not pass over a
 tall object in the bin on its way to the object row. Levels 3-7 have no staging pad

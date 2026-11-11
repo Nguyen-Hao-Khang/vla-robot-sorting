@@ -1,123 +1,102 @@
-# Cài đặt môi trường
+# Getting started
 
-## 1. Máy nào làm được việc gì
+## 1. Which machine does what
 
-| Việc | Windows | Ubuntu 22.04 + GPU NVIDIA | Kaggle / Colab |
+| Task | Windows | Ubuntu 22.04 + NVIDIA GPU | Kaggle / Colab |
 |---|---|---|---|
-| Viết code, chạy test, xử lý dữ liệu, viết tài liệu | Có | Có | Không cần |
-| Chạy mô phỏng RoboTwin, sinh demo, đánh giá policy trong mô phỏng | Không (WSL không hỗ trợ) | Có | Không |
-| Tinh chỉnh SmolVLA hoặc Evo-1 | Có, nếu GPU ≥ 16 GB | Có, nếu GPU ≥ 16 GB | Có |
-| Biên dịch báo cáo LaTeX | Có (TeX Live hoặc MiKTeX) | Có | Không cần |
+| Code, unit tests, data processing, documentation | Yes | Yes | Not needed |
+| RoboTwin simulation, demonstration recording, policy rollouts | No (WSL lacks the required Vulkan support) | Yes | No |
+| Fine-tuning SmolVLA or Evo-1 | Yes, GPU with 16 GB or more | Yes, GPU with 16 GB or more | Yes |
 
-## 2. Môi trường phát triển (mọi máy)
+## 2. Development environment
 
-Cài [Git](https://git-scm.com/) và [uv](https://docs.astral.sh/uv/). uv tự tải Python phù hợp (3.10 đến 3.12).
+Install [Git](https://git-scm.com/) and [uv](https://docs.astral.sh/uv/). uv downloads a matching Python (3.10 to 3.12).
 
-```bash
+```sh
 git clone https://github.com/Nguyen-Hao-Khang/vla-robot-sorting.git
 cd vla-robot-sorting
 uv sync
 uv run ruff check .
 uv run pytest
+uv run pre-commit install
 ```
 
-Kết quả mong đợi:
+Expected: ruff reports `All checks passed!` and pytest reports about 190 passed tests.
 
-- Ruff báo `All checks passed!`.
-- Khoảng 590 test chạy qua.
-- Khoảng 20 test được bỏ qua: các test này cần dữ liệu camera thu từ mô phỏng (biến môi trường `S1I_NATIVE_DIR`) hoặc mã nguồn RoboTwin.
+On Windows, `tools/setup/bootstrap_windows.ps1` runs the same steps and `tools/setup/check_windows_env.ps1` prints the Git, Python, uv and GPU versions.
 
-Trên Windows, `tools/setup/bootstrap_windows.ps1` chạy toàn bộ các bước trên. `tools/setup/check_windows_env.ps1` in phiên bản Git, Python, uv và GPU để kiểm tra nhanh.
+Keep the clone outside OneDrive, Dropbox or Google Drive. Their partial syncs corrupt `.git`.
 
-Không đặt thư mục repo trong OneDrive, Dropbox hoặc Google Drive. Các dịch vụ này có thể đồng bộ dở dang thư mục `.git` và làm hỏng repo.
+## 3. Simulation environment (Ubuntu 22.04)
 
-## 3. Môi trường mô phỏng (Ubuntu 22.04)
+### 3.1 Requirements
 
-### 3.1 Yêu cầu
+- Ubuntu 22.04 on bare metal. Virtual machines and WSL are not supported.
+- NVIDIA GPU with Vulkan. Tested with driver 595 on a GTX 1660 Ti (6 GB).
+- About 40 GB of free disk for RoboTwin, assets and data.
 
-- Ubuntu 22.04 cài trực tiếp trên máy (không dùng máy ảo hay WSL).
-- GPU NVIDIA hỗ trợ Vulkan. Dự án đã kiểm thử với driver 595 trên GTX 1660 Ti.
-- Khoảng 40 GB ổ trống cho RoboTwin, mô hình 3D và dữ liệu.
+### 3.2 Pinned versions
 
-### 3.2 Phiên bản cố định
-
-| Thành phần | Nguồn | Phiên bản |
+| Component | Source | Version |
 |---|---|---|
-| Panthera-HT RoboTwin | `github.com/HighTorque-Robotics/Panthera-HT_RoboTwin` | commit `2aee31ad75cb7b0cd779540441c6025853a5b60d` |
-| CuRobo | `github.com/NVlabs/curobo` | `v0.7.8` (commit `d64c4b00`) |
+| Panthera-HT RoboTwin | `HighTorque-Robotics/Panthera-HT_RoboTwin` | commit `2aee31ad` |
+| CuRobo | `NVlabs/curobo` | `v0.7.8` (`d64c4b00`) |
 | SAPIEN | PyPI | `3.0.0b1` |
-| PyTorch | PyPI | bản dựng CUDA 12.8 |
+| PyTorch | PyPI | CUDA 12.8 build |
 
-Danh sách đầy đủ nằm trong `legacy/sprint1/configs/s1.1/repos.lock.yaml`.
+Full list with commit hashes: [`configs/repos.lock.yaml`](../configs/repos.lock.yaml).
 
-### 3.3 Các bước
+### 3.3 Steps
 
-1. Cài driver và công cụ hệ thống:
+1. Install the driver and system tools, then reboot:
 
-   ```bash
+   ```sh
    bash tools/setup/bootstrap_ubuntu_host.sh
    ```
 
-   Script cài `build-essential`, `vulkan-tools`, `ffmpeg` và driver NVIDIA do Ubuntu đề xuất, rồi ghi log vào `~/damh-host-bootstrap/`. Khởi động lại máy sau khi cài driver.
+   The script installs `build-essential`, `vulkan-tools`, `ffmpeg` and the recommended NVIDIA driver, and logs to `~/vrs-host-bootstrap/`.
 
-2. Cài Miniforge, tạo môi trường conda `RoboTwin`, clone Panthera-HT RoboTwin đúng commit ở trên. Làm theo hướng dẫn cài đặt trong README của repo đó, gồm cả bước tải mô hình 3D.
-3. Cài CuRobo `v0.7.8` vào môi trường `RoboTwin` theo hướng dẫn của NVIDIA.
-4. Clone repo dự án vào ổ Linux, ví dụ `~/projects/vla-robot-sorting`. Không đặt repo trên phân vùng NTFS.
-5. Chạy thử mô phỏng:
+2. Install Miniforge, create the conda environment `RoboTwin`, and clone Panthera-HT RoboTwin at the pinned commit. Follow that repository's installation guide, including the asset download.
+3. Install CuRobo `v0.7.8` into the `RoboTwin` environment following the NVIDIA instructions.
+4. Clone this repository onto the Linux file system, for example `~/projects/vla-robot-sorting`. NTFS partitions break file permissions.
+5. Open a scene:
 
-   ```bash
+   ```sh
    conda activate RoboTwin
    cd ~/projects/vla-robot-sorting
    python tools/twin/twin_console.py \
-       --robotwin-root ~/worktrees/Panthera-HT_RoboTwin/RoboTwin \
-       --level 1
+       --robotwin-root ~/worktrees/Panthera-HT_RoboTwin/RoboTwin --level 1
    ```
 
-   Cửa sổ SAPIEN mở ra với cánh tay Panthera-HT và một khối trên bàn. Log phiên chạy ghi vào `~/twin_logs/`, đổi bằng `--log-dir`.
+   A SAPIEN window shows the arm and one cube on the table. Session logs go to `~/twin_logs/`; change this with `--log-dir`.
 
-### 3.4 Khóa API mô hình ngôn ngữ
+### 3.4 Language model API key
 
-Một số công cụ gọi Gemini, ví dụ để sinh câu lệnh hoặc lập kế hoạch trong mô phỏng tương tác. Khóa API chỉ đọc từ biến môi trường `GEMINI_API_KEY`.
+The interactive console calls Gemini to plan typed commands. They read the key from `GEMINI_API_KEY` only.
 
-```bash
-mkdir -p ~/.config/damh
-printf 'GEMINI_API_KEY=<khóa của bạn>\n' > ~/.config/damh/gemini.env
-chmod 600 ~/.config/damh/gemini.env
-set -a; . ~/.config/damh/gemini.env; set +a
+```sh
+mkdir -p ~/.config/vla-robot-sorting
+printf 'GEMINI_API_KEY=<your key>\n' > ~/.config/vla-robot-sorting/gemini.env
+chmod 600 ~/.config/vla-robot-sorting/gemini.env
+set -a; . ~/.config/vla-robot-sorting/gemini.env; set +a
 ```
 
-Không ghi khóa vào code, notebook, issue hay tin nhắn.
+Never put the key in code, notebooks, issues or chat messages.
 
-## 4. Môi trường huấn luyện
+## 4. Training environment
 
-### 4.1 Máy có GPU NVIDIA (Windows hoặc Linux)
+### 4.1 Local NVIDIA GPU (Windows or Linux)
 
-```bash
+```sh
 uv venv .venv-train --python 3.10
-uv pip install --python .venv-train "lerobot[smolvla]"
+uv pip install --python .venv-train "lerobot[smolvla]==0.4.4"
+.venv-train/bin/python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 ```
 
-GPU thế hệ RTX 50 cần PyTorch dựng cho CUDA 12.8 trở lên. Kiểm tra:
-
-```bash
-.venv-train/bin/python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
-```
-
-Trên Windows, đường dẫn là `.venv-train\Scripts\python`.
+On Windows the interpreter is `.venv-train\Scripts\python`. RTX 50-series GPUs need a PyTorch build for CUDA 12.8 or newer.
 
 ### 4.2 Kaggle
 
-1. Tạo tài khoản Kaggle và xác minh số điện thoại để dùng GPU (30 giờ mỗi tuần).
-2. Tải `notebooks/kaggle_train_panthera_twin.ipynb` lên Kaggle, gắn dataset, chọn GPU T4 x2.
-3. Lưu checkpoint vào Kaggle Output hoặc Hugging Face Hub. Không commit checkpoint vào repo.
-
-## 5. Báo cáo LaTeX
-
-Cần TeX Live (Linux, Windows) hoặc MiKTeX (Windows) có gói `vntex`.
-
-```bash
-cd report
-latexmk -pdf main.tex
-```
-
-Quy tắc viết báo cáo: [report/README.md](../report/README.md).
+1. Verify your phone number on Kaggle to enable GPUs (30 hours per week).
+2. Upload `notebooks/kaggle_train_panthera_twin.ipynb`, attach the raw dataset, select GPU T4 ×2.
+3. Save checkpoints to the Kaggle output or the Hugging Face Hub. Do not commit checkpoints.

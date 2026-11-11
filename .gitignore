@@ -16,13 +16,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Large/reference binaries are preserved locally and inventoried by SHA256.
+# Large binaries
 *.pdf
 *.zip
-
-# Generated experiment outputs: keep metadata/summaries selectively.
-experiments/results/*
-!experiments/results/.gitkeep
 
 # Local simulator/vendor checkouts should not be vendored accidentally.
 external/

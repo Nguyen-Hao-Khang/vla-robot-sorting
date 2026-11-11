@@ -1,4 +1,4 @@
-"""Digital twin v2 camera window: frame ordering, tiling, rate limit, fail-safe (no GPU/GUI)."""
+"""Digital twin camera window: frame ordering, tiling, rate limit, fail-safe (no GPU/GUI)."""
 
 from __future__ import annotations
 

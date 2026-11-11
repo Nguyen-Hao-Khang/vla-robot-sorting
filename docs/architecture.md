@@ -1,89 +1,73 @@
-# Kiến trúc hệ thống
+# Architecture
 
-## 1. Bài toán
+## 1. Problem statement
 
-Đầu vào của hệ thống:
+At each control step $t$ the system receives:
 
-- Một câu lệnh tiếng Việt hoặc tiếng Anh, ví dụ "gắp khối màu đỏ bỏ vào khay bên trái".
-- Ảnh từ hai camera: một camera gắn trên cổ tay robot và một camera tổng quan nhìn bàn làm việc.
-- Trạng thái 6 khớp và độ mở kẹp của cánh tay Panthera-HT.
+- $I^w_t$, $I^s_t$: RGB images from a wrist camera and a workspace camera, 320×240;
+- $q_t \in \mathbb{R}^7$: six arm joint positions and the gripper opening of the Panthera-HT;
+- $\ell$: a command in Vietnamese or English, fixed for the episode.
 
-Đầu ra là chuỗi vị trí khớp mục tiêu. Hệ thống thực thi chuỗi này để gắp đúng vật và đặt vào đúng khay.
+A policy $\pi(a_{t:t+H} \mid I^w_t, I^s_t, q_t, \ell)$ outputs a chunk of $H$ joint-position targets. The episode succeeds when the object named in $\ell$ rests in the container named in $\ell$ ([task specification](task-spec.md)).
 
-Phạm vi phân loại: theo **màu** và **hình dạng** của vật ([đặc tả nhiệm vụ](task-spec.md)). Phân loại theo nhóm ngữ nghĩa (ví dụ "đồ nhựa", "đồ ăn được") là phần mở rộng nếu còn thời gian.
+Scope: objects are identified by colour and shape. Sorting by semantic category is an extension.
 
-## 2. Thành phần
+## 2. Components
 
-```
-          câu lệnh VI/EN
-                 │
-┌────────────────▼─────────────────┐
-│   Mô hình VLA đã tinh chỉnh      │◄── ảnh camera cổ tay + camera tổng quan
-│   (chạy cục bộ, GPU ≥ 6 GB)      │◄── trạng thái khớp
-└────────────────┬─────────────────┘
-                 │ chuỗi vị trí khớp
-┌────────────────▼─────────────────┐
-│   Lớp an toàn                    │  giới hạn khớp, vùng làm việc,
-│                                  │  vận tốc, dừng khẩn cấp
-└────────────────┬─────────────────┘
-                 │
-     ┌───────────┴───────────┐
-     ▼                       ▼
- Panthera-HT trong      Panthera-HT thật
- RoboTwin (mô phỏng)    (SDK của hãng)
+```mermaid
+flowchart TB
+    CMD[Command VI/EN] --> POL
+    CAM[Wrist + workspace cameras] --> POL
+    JS[Joint state] --> POL
+    POL[VLA policy<br/>LeRobot checkpoint] -->|joint targets| SAFE[Safety layer<br/>joint limits, workspace box,<br/>velocity, watchdog, E-stop]
+    SAFE --> SIM[Panthera-HT in RoboTwin<br/>SAPIEN / PhysX]
+    SAFE --> ARM[Panthera-HT arm<br/>vendor SDK]
 ```
 
-| Thành phần | Vai trò | Vị trí trong repo |
+| Component | Role | Location |
 |---|---|---|
-| Mô hình VLA | Ánh xạ (ảnh, câu lệnh, trạng thái) → chuỗi hành động. Nhóm đang chọn giữa SmolVLA và Evo-1, xem [ADR 0005](adr/0005-vla-model-selection.md) | Huấn luyện bằng LeRobot; notebook trong `notebooks/` |
-| Lớp an toàn | Chặn lệnh vượt giới hạn trước khi gửi xuống robot | `src/vla_robot_sorting/safety/` |
-| Môi trường mô phỏng | Panthera-HT trong RoboTwin (SAPIEN, PhysX), cảnh bàn với vật và khay | `tools/twin/twin_scene.py`, `tools/twin/twin_console.py` |
-| Chuyên gia mô phỏng | Thực hiện thao tác gắp–đặt bằng lập kế hoạch chuyển động (CuRobo) và thông tin ground truth của simulator, dùng để sinh demo | `tools/twin/twin_console.py`, `twin_grasp.py`, `twin_kinematics.py`, `twin_obstacles.py` |
-| Ghi dữ liệu | Ghi trạng thái khớp, hành động và ảnh camera khi chuyên gia thao tác | `tools/twin/twin_record.py` |
-| Chuyển đổi dataset | Chuyển dữ liệu thô sang định dạng LeRobot | `tools/twin/lerobot_convert.py` |
-| Cầu nối policy | Chạy policy đã huấn luyện trong môi trường LeRobot và trả hành động cho mô phỏng qua socket cục bộ | `tools/twin/policy_bridge.py` |
-| Thư viện dự án | Giao diện dữ liệu, adapter mô phỏng, lập kế hoạch, an toàn, đánh giá | `src/vla_robot_sorting/` |
+| VLA policy | Maps images, command and joint state to joint targets. Model choice in [ADR 0005](adr/0005-vla-model-selection.md) | Trained with LeRobot; `notebooks/` |
+| Policy server | Loads a checkpoint in the LeRobot environment and answers action requests over a local socket | `tools/twin/policy_bridge.py` |
+| Safety layer | Rejects actions outside joint, velocity, acceleration and jerk limits; workspace box, watchdog and E-stop to be added ([ADR 0004](adr/0004-safety-layer.md)) | `src/vla_robot_sorting/safety/` |
+| Simulation scenes | Panthera-HT with a table, objects and containers; seven scene levels | `tools/twin/twin_scene.py`, `twin_assets.py`, `twin_cameras.py` |
+| Scripted expert | Executes pick-and-place with CuRobo motion planning and simulator ground truth; generates demonstrations | `tools/twin/twin_console.py`, `twin_grasp.py`, `twin_kinematics.py`, `twin_obstacles.py` |
+| Recorder | Samples joint states, joint targets and camera frames while the expert acts | `tools/twin/twin_record.py` |
+| Dataset converter | Converts raw episodes to the LeRobot dataset format | `tools/twin/lerobot_convert.py` |
+| Interactive console | Accepts typed commands, plans them with a language model, executes them with the expert or a policy | `tools/twin/twin_console.py`, `twin_models.py` |
 
-## 3. Luồng dữ liệu
+## 3. Data flow
 
-### 3.1 Huấn luyện
+### 3.1 Training
 
-1. `twin_record.py` sinh cảnh ngẫu nhiên. Chuyên gia mô phỏng thực hiện một thao tác gắp–đặt, và hệ thống ghi dữ liệu ở 15 Hz:
-   - trạng thái khớp;
-   - vị trí khớp mục tiêu ở bước kế tiếp (dùng làm hành động);
-   - ảnh camera cổ tay và camera tổng quan.
-   Hệ thống chỉ giữ các lượt thành công.
-2. Mô hình ngôn ngữ sinh nhiều cách diễn đạt câu lệnh tiếng Việt và tiếng Anh cho mỗi thao tác.
-3. `lerobot_convert.py` chuyển dữ liệu thô sang dataset LeRobot. Nhóm lưu dataset trên Hugging Face Hub hoặc Kaggle.
-4. Nhóm tinh chỉnh mô hình VLA trên GPU đám mây hoặc GPU ≥ 16 GB.
-5. Khi robot thật sẵn sàng, nhóm thu thêm demo bằng điều khiển tay chủ–tay tớ (teleoperation) và tinh chỉnh tiếp trên dữ liệu kết hợp.
+1. `twin_record.py` samples a scene layout and a task. The scripted expert executes it. The recorder stores joint states, the next joint state as the action, and both camera streams at 15 Hz. It keeps successful episodes only.
+2. A language model writes Vietnamese and English phrasings for each task.
+3. `lerobot_convert.py` writes a versioned LeRobot dataset, stored on the Hugging Face Hub or Kaggle.
+4. LeRobot fine-tunes the policy on a GPU with 16 GB or more.
+5. With the real arm available, the team records teleoperated demonstrations and trains on the combined data.
 
-Chi tiết: [data-and-training.md](data-and-training.md).
+Details: [data and training](data-and-training.md).
 
-### 3.2 Suy luận
+### 3.2 Inference
 
-1. `policy_bridge.py serve` nạp checkpoint và lắng nghe trên `127.0.0.1:5555`.
-2. Mô phỏng hoặc chương trình điều khiển robot gửi trạng thái, ảnh và câu lệnh. Mỗi gói tin gồm 4 byte độ dài rồi tới nội dung JSON.
-3. Policy trả về hành động. Lớp an toàn kiểm tra hành động trước khi thực thi.
+1. `policy_bridge.py serve` loads the checkpoint and listens on `127.0.0.1:5555`.
+2. The simulator or robot controller sends the joint state, camera frames and command. Each message is a 4-byte length prefix followed by JSON.
+3. The server returns joint targets. The safety layer checks them before execution.
 
-Policy và mô phỏng chạy ở hai môi trường Python khác nhau (LeRobot và RoboTwin). Socket cục bộ tách hai môi trường đó, giống cách robot thật nhận lệnh từ máy tính điều khiển.
+The policy and the simulator run in separate Python environments (LeRobot and RoboTwin) because their dependencies conflict. The socket boundary matches how the real robot will receive commands from the control PC.
 
-## 4. Ràng buộc phần cứng
+## 4. Hardware
 
-| Máy | Cấu hình | Vai trò |
+| Machine | Configuration | Role |
 |---|---|---|
-| Laptop mô phỏng | GTX 1660 Ti 6 GB, Ubuntu 22.04 | Chạy RoboTwin, sinh demo, đánh giá trong mô phỏng, điều khiển robot thật |
-| Máy huấn luyện | RTX 5090, Windows | Tinh chỉnh mô hình VLA |
-| GPU đám mây | Kaggle T4 16 GB, Colab | Tinh chỉnh khi máy huấn luyện bận |
-| Robot | Panthera-HT, 6 khớp + kẹp, sải tay 860 mm, tải 3,5 kg | Thực nghiệm thật |
+| Simulation workstation | GTX 1660 Ti 6 GB, Ubuntu 22.04 | RoboTwin, demonstration recording, simulated evaluation, real-robot control |
+| Training workstation | RTX 5090, Windows | Fine-tuning |
+| Cloud GPU | Kaggle T4 16 GB | Fine-tuning |
+| Robot | Panthera-HT, 6 joints + two-finger gripper, 860 mm reach, 3.5 kg payload | Real-robot experiments |
 
-GTX 1660 Ti không hỗ trợ bf16 bằng phần cứng, nên mô hình phải suy luận ở fp16 hoặc fp32.
+The GTX 1660 Ti has no hardware bf16, so inference runs in fp16 or fp32.
 
-## 5. Giới hạn đã biết của môi trường mô phỏng
+## 5. Known simulator limits
 
-- **Tầm với khi kẹp hướng thẳng xuống.**
-  - Kẹp của Panthera-HT chỉ lên được độ cao 0,86–0,92 m khi hướng thẳng xuống.
-  - Khi nghiêng 35–45°, kẹp lên được 1,07–1,10 m.
-  - Hệ quả: chuyên gia mô phỏng chọn tư thế gắp nghiêng khi cần (`twin_kinematics.py`).
-- **Vật cản trong CuRobo.** Mặc định, RoboTwin chỉ đưa mặt bàn vào bản đồ vật cản của CuRobo. `twin_obstacles.py` bổ sung các vật trên bàn.
-- **Vật khó gắp.** Kẹp hai ngón gắp vật hình tứ diện không ổn định. Đặc tả nhiệm vụ không dùng hình này.
+- **Reach with a vertical gripper.** With the gripper pointing straight down the tool rises only to 0.86–0.92 m in the world frame; tilted by 35–45° it rises to 1.07–1.10 m. The expert chooses a tilted grasp when needed (`twin_kinematics.py`). `tools/twin/twin_workspace_plot.py` regenerates the reach maps.
+- **Collision world.** RoboTwin passes only the table to CuRobo. `twin_obstacles.py` adds the objects on the table.
+- **Graspability.** The two-finger gripper cannot hold a tetrahedron reliably, so the task specification excludes it.

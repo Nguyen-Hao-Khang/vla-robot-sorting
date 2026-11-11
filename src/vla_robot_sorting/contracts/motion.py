@@ -1,4 +1,4 @@
-"""Vendor-neutral motion/control contracts for Sprint 1.
+"""Vendor-neutral motion and control data types: joint states, paths, trajectories, safety reports.
 
 All units are SI: seconds, metres, radians, and their derivatives.
 """

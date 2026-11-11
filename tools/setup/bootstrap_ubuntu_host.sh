@@ -12,7 +12,7 @@ if [[ "${ID}" != "ubuntu" || "${VERSION_ID}" != "22.04" ]]; then
   exit 3
 fi
 
-LOG_DIR="$HOME/damh-host-bootstrap"
+LOG_DIR="$HOME/vrs-host-bootstrap"
 mkdir -p "$LOG_DIR"
 exec > >(tee "$LOG_DIR/bootstrap.log") 2>&1
 

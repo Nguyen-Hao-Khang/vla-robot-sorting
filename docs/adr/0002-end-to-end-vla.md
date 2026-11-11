@@ -1,31 +1,29 @@
-# ADR 0002: Mô hình VLA đầu-cuối là hệ thống chính
+# ADR 0002: An end-to-end VLA as the main system
 
-- Trạng thái: Chấp nhận
-- Ngày: 2026-10-27
+- Status: Accepted
+- Date: 2026-10-27
 
-## Bối cảnh
+## Context
 
-Đề tài yêu cầu tích hợp công nghệ VLA với cánh tay robot để phân loại vật theo lệnh. Giai đoạn đầu, nhóm xây một pipeline mô-đun: tri giác → hiểu lệnh → chọn điểm gắp → lập kế hoạch chuyển động. Pipeline này hoạt động trong mô phỏng nhưng không dùng mô hình VLA.
+The project goal is to sort objects from language commands with a VLA model on a robot arm. The first project phase built a modular pipeline (perception, command parsing, grasp selection, motion planning) that works in simulation but contains no VLA.
 
-## Phương án
+## Options
 
-| Phương án | Mô tả |
+| Option | Description |
 |---|---|
-| A. VLA đầu-cuối | Một mô hình nhận ảnh, câu lệnh, trạng thái khớp và xuất trực tiếp chuỗi vị trí khớp |
-| B. Mô hình thị giác–ngôn ngữ (VLM) lập kế hoạch + VLA thực thi | VLM tách lệnh thành bước con, VLA thực thi từng bước |
-| C. Pipeline mô-đun | Tri giác, hiểu lệnh, lập kế hoạch chuyển động viết tay |
+| A. End-to-end VLA | One model maps images, command and joint state directly to joint targets |
+| B. Vision-language planner + VLA | A vision-language model splits the command into sub-steps; a VLA executes each step |
+| C. Modular pipeline | Hand-built perception, parsing and motion planning |
 
-## Quyết định
+## Decision
 
-Chọn A. Phương án B và C không nằm trong phạm vi học kỳ này.
+Option A. Options B and C are out of scope for this project period.
 
-Lý do:
+- A meets the project goal directly and runs locally, without an online service at run time.
+- B adds a large model and an interface that needs its own evaluation, which the schedule cannot absorb.
+- C uses no VLA. Its motion planning and grasp selection live on as the scripted expert that generates demonstrations (ADR 0003). The full modular pipeline is preserved at the tag `sprint1-archive`.
 
-- A đáp ứng trực tiếp yêu cầu đề tài và chạy cục bộ, không phụ thuộc dịch vụ trực tuyến khi vận hành.
-- B thêm một mô hình lớn và một giao diện cần đánh giá riêng, không vừa thời gian còn lại.
-- C không phải công nghệ VLA. Mã của C được giữ trong `legacy/sprint1/` và tái dùng làm chuyên gia sinh demo trong mô phỏng (ADR 0003).
+## Consequences
 
-## Hệ quả
-
-- Chất lượng hệ thống phụ thuộc chủ yếu vào dữ liệu huấn luyện. Ngẫu nhiên hóa cảnh và đa dạng câu lệnh trở thành yêu cầu bắt buộc.
-- Mô hình không đảm bảo an toàn, nên robot thật cần lớp an toàn riêng (ADR 0004).
+- System quality depends mostly on the training data, so scene randomisation and command diversity are requirements.
+- The model gives no safety guarantee, so the real arm needs a separate safety layer (ADR 0004).

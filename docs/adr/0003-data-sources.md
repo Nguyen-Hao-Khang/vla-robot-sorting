@@ -1,30 +1,30 @@
-# ADR 0003: Sinh dữ liệu bằng chuyên gia mô phỏng và mô hình ngôn ngữ
+# ADR 0003: Training data from a simulated expert and a language model
 
-- Trạng thái: Chấp nhận
-- Ngày: 2026-10-27
+- Status: Accepted
+- Date: 2026-10-27
 
-## Bối cảnh
+## Context
 
-Tinh chỉnh một mô hình VLA cần hàng trăm demo có ảnh, trạng thái khớp, hành động và câu lệnh. Robot thật chỉ có từ cuối tháng 11, và thu demo bằng tay mất khoảng 1–2 phút mỗi lượt.
+Fine-tuning a VLA needs hundreds of demonstrations with images, joint states, actions and commands. The real arm becomes available at the end of November, and a teleoperated demonstration takes 1–2 minutes.
 
-## Phương án
+## Options
 
-| Phương án | Ưu điểm | Nhược điểm |
+| Option | Advantages | Disadvantages |
 |---|---|---|
-| Chỉ thu demo thật | Không có khoảng cách mô phỏng–thực tế | Không đủ thời gian để thu hàng trăm lượt |
-| Chuyên gia mô phỏng + mô hình ngôn ngữ sinh câu lệnh, bổ sung ít demo thật | Sinh được số lượng lớn, có nhãn tự động, tái tạo được bằng seed | Có khoảng cách mô phỏng–thực tế; chuyên gia dùng thông tin ground truth |
-| Dùng dataset công khai (Open X-Embodiment, LIBERO) | Có sẵn | Khác robot, khác nhiệm vụ, không có tiếng Việt |
+| Real demonstrations only | No simulation-to-reality gap | Not enough time for hundreds of episodes |
+| Simulated expert + language-model commands, plus a few real demonstrations | Large volume, automatic labels, reproducible from seeds | Simulation-to-reality gap; the expert uses simulator ground truth |
+| Public datasets (Open X-Embodiment, LIBERO) | Available now | Different robots and tasks; no Vietnamese |
 
-## Quyết định
+## Decision
 
-Chọn phương án hai:
+The second option:
 
-- Chuyên gia mô phỏng (lập kế hoạch chuyển động bằng CuRobo, đọc vị trí vật từ simulator) thực hiện thao tác, `twin_record.py` ghi lại.
-- Mô hình ngôn ngữ lớn sinh nhiều cách diễn đạt tiếng Việt và tiếng Anh cho mỗi thao tác.
-- Bổ sung 30–50 demo thật khi có robot.
+- A scripted expert (CuRobo motion planning, object poses from the simulator) performs the task; `twin_record.py` records it.
+- A large language model writes several Vietnamese and English phrasings per task.
+- 30–50 real demonstrations are added once the arm arrives.
 
-## Hệ quả
+## Consequences
 
-- Thông tin ground truth chỉ dùng để sinh demo. Mô hình VLA chỉ nhận ảnh, câu lệnh và trạng thái khớp.
-- Câu lệnh kiểm tra do người viết, tách khỏi câu lệnh huấn luyện, để đo khả năng hiểu lệnh chưa thấy.
-- Chi tiết quy trình: `docs/data-and-training.md`.
+- Ground-truth object poses serve only to generate demonstrations. The VLA receives images, the command and the joint state.
+- People write the test commands, separately from the training commands, to measure understanding of unseen phrasings.
+- Procedure: [data and training](../data-and-training.md).

@@ -10,44 +10,44 @@
     \def\innerSep{0.5cm} % Khoảng cách từ bát giác vào hình chữ nhật đen bên trong
 
     % 1. VẼ HÌNH BÁT GIÁC CHÍNH
-    \draw[line width=2pt, color=myblue] 
-        ([shift={(\offset+\diag, -\offset)}]current page.north west) -- 
-        ([shift={(-\offset-\diag, -\offset)}]current page.north east) -- 
-        ([shift={(-\offset, -\offset-\diag)}]current page.north east) -- 
-        ([shift={(-\offset, \offset+\diag)}]current page.south east) -- 
-        ([shift={(-\offset-\diag, \offset)}]current page.south east) -- 
-        ([shift={(\offset+\diag, \offset)}]current page.south west) -- 
-        ([shift={(\offset, \offset+\diag)}]current page.south west) -- 
+    \draw[line width=2pt, color=myblue]
+        ([shift={(\offset+\diag, -\offset)}]current page.north west) --
+        ([shift={(-\offset-\diag, -\offset)}]current page.north east) --
+        ([shift={(-\offset, -\offset-\diag)}]current page.north east) --
+        ([shift={(-\offset, \offset+\diag)}]current page.south east) --
+        ([shift={(-\offset-\diag, \offset)}]current page.south east) --
+        ([shift={(\offset+\diag, \offset)}]current page.south west) --
+        ([shift={(\offset, \offset+\diag)}]current page.south west) --
         ([shift={(\offset, -\offset-\diag)}]current page.north west) -- cycle;
 
     % 2. VẼ HÌNH CHỮ NHẬT BÊN TRONG (MÀU ĐEN)
     % Hình này nằm thụt vào một chút so với các cạnh thẳng của bát giác
     \draw[line width=2pt, color=black]
-        ([shift={(\offset+\innerSep, -\offset-\innerSep)}]current page.north west) rectangle 
+        ([shift={(\offset+\innerSep, -\offset-\innerSep)}]current page.north west) rectangle
         ([shift={(-\offset-\innerSep, \offset+\innerSep)}]current page.south east);
 
     % 3. VẼ 4 GÓC CHỮ L (MÀU ĐEN)
     % Nằm tại 4 góc tuyệt đối của khung ảo, rời ra ngoài
     \tikzset{lstyle/.style={line width=2pt, color=black}}
-    
+
     % Góc trên trái
-    \draw[lstyle] ([shift={(\offset, -\offset-\Llen)}]current page.north west) -- 
-                  ([shift={(\offset, -\offset)}]current page.north west) -- 
+    \draw[lstyle] ([shift={(\offset, -\offset-\Llen)}]current page.north west) --
+                  ([shift={(\offset, -\offset)}]current page.north west) --
                   ([shift={(\offset+\Llen, -\offset)}]current page.north west);
-    
+
     % Góc trên phải
-    \draw[lstyle] ([shift={(-\offset-\Llen, -\offset)}]current page.north east) -- 
-                  ([shift={(-\offset, -\offset)}]current page.north east) -- 
+    \draw[lstyle] ([shift={(-\offset-\Llen, -\offset)}]current page.north east) --
+                  ([shift={(-\offset, -\offset)}]current page.north east) --
                   ([shift={(-\offset, -\offset-\Llen)}]current page.north east);
-                      
+
     % Góc dưới phải
-    \draw[lstyle] ([shift={(-\offset, \offset+\Llen)}]current page.south east) -- 
-                  ([shift={(-\offset, \offset)}]current page.south east) -- 
+    \draw[lstyle] ([shift={(-\offset, \offset+\Llen)}]current page.south east) --
+                  ([shift={(-\offset, \offset)}]current page.south east) --
                   ([shift={(-\offset-\Llen, \offset)}]current page.south east);
-                      
+
     % Góc dưới trái
-    \draw[lstyle] ([shift={(\offset+\Llen, \offset)}]current page.south west) -- 
-                  ([shift={(\offset, \offset)}]current page.south west) -- 
+    \draw[lstyle] ([shift={(\offset+\Llen, \offset)}]current page.south west) --
+                  ([shift={(\offset, \offset)}]current page.south west) --
                   ([shift={(\offset, \offset+\Llen)}]current page.south west);
 
 \end{tikzpicture}

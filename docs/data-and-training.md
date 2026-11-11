@@ -1,93 +1,81 @@
-# Dữ liệu và huấn luyện
+# Data and training
 
-## 1. Nhiệm vụ
+## 1. Sources
 
-Mỗi demo là một lần gắp–đặt: robot gắp một vật trên bàn và đặt vào một khay theo câu lệnh. Đặc tả nhiệm vụ nằm trong `docs/task-spec.md`, gồm:
-
-- danh sách vật, màu và hình dạng;
-- số khay và vị trí khay;
-- cách sinh câu lệnh;
-- tiêu chí thành công đo tự động trong mô phỏng.
-
-## 2. Nguồn dữ liệu
-
-| Nguồn | Cách tạo | Số lượng mục tiêu |
+| Source | Produced by | Target size |
 |---|---|---|
-| Demo mô phỏng | Chuyên gia mô phỏng thực hiện thao tác trên cảnh ngẫu nhiên, `tools/twin/twin_record.py` ghi lại | 500–1.000 lượt thành công |
-| Câu lệnh huấn luyện | Mô hình ngôn ngữ sinh nhiều cách diễn đạt tiếng Việt và tiếng Anh cho mỗi cặp (vật, khay) | ≥ 30 câu cho mỗi cặp |
-| Câu lệnh kiểm tra | Người thật viết qua biểu mẫu, không dùng khi huấn luyện | 100–200 câu |
-| Demo thật | Điều khiển tay chủ–tay tớ trên Panthera-HT | 30–50 lượt |
+| Simulated demonstrations | Scripted expert on randomised scenes, recorded by `tools/twin/twin_record.py` | 500–1,000 successful episodes |
+| Training commands | Language model paraphrases in Vietnamese and English for each (object, container) pair | ≥ 30 per pair and language |
+| Test commands | Written by people outside the team through a form; never used for training | 100–200 |
+| Real demonstrations | Leader–follower teleoperation on the Panthera-HT | 30–50 episodes |
 
-### 2.1 Ngẫu nhiên hóa cảnh
+### 1.1 Scene randomisation
 
-Một mô hình VLA thấy cùng một bố cục cảnh với cùng một câu lệnh sẽ học thuộc vị trí thay vì đọc câu lệnh. Bộ sinh dữ liệu phải đảm bảo:
+A policy that sees the same layout with the same command learns positions instead of reading the command. The generator therefore:
 
-- vị trí, màu và số lượng vật thay đổi giữa các bố cục;
-- một bố cục đi với nhiều câu lệnh khác nhau, mỗi câu chỉ tới một vật khác;
-- seed ngẫu nhiên được ghi lại để tái tạo chính xác bộ dữ liệu.
+- varies object positions, colours and counts between layouts;
+- pairs each layout with several commands that target different objects;
+- records the random seed so the dataset can be rebuilt exactly.
 
-### 2.2 Câu lệnh
+### 1.2 Commands
 
-Mỗi câu lệnh sinh tự động lưu kèm:
+Each generated command stores the model name and version, the prompt and the generation date. Duplicates and commands that point at the wrong object are filtered out. The human-written test set stays separate from all training data.
 
-- tên và phiên bản mô hình ngôn ngữ đã dùng;
-- prompt;
-- ngày sinh.
+## 2. Formats
 
-Nhóm loại bỏ các câu trùng lặp và các câu chỉ sai vật. Tập câu kiểm tra do người viết phải giữ tách biệt khỏi dữ liệu huấn luyện.
-
-## 3. Định dạng
-
-### 3.1 Dữ liệu thô (`twin_record.py`)
+### 2.1 Raw episodes (`twin_record.py`)
 
 ```
-<out>/episode_000000/meta.json           câu lệnh, cấp độ cảnh, vật, khay, thành công, fps
-<out>/episode_000000/states.npy          float32 [T, D]  vị trí khớp + kẹp
-<out>/episode_000000/actions.npy         float32 [T, D]  vị trí khớp mục tiêu ở bước kế tiếp
-<out>/episode_000000/<camera>/000000.jpg ảnh 320×240
+<out>/episode_000000/meta.json            command, scene level, object, container, success, fps
+<out>/episode_000000/states.npy           float32 [T, D]  joint positions + gripper
+<out>/episode_000000/actions.npy          float32 [T, D]  joint-position target (next state)
+<out>/episode_000000/<camera>/000000.jpg  320×240 frames
 ```
 
-Tần số ghi mặc định là 15 Hz (đặt trong `configs/twin_cameras.json`).
+The sampling rate defaults to 15 Hz (`configs/twin_cameras.json`).
 
-Lệnh ghi demo (chạy trong môi trường `RoboTwin`, không mở cửa sổ):
-
-```bash
+```sh
 python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --levels 1,2,3 --seed 0
 ```
 
-### 3.2 Dataset LeRobot (`lerobot_convert.py`)
+### 2.2 LeRobot dataset (`lerobot_convert.py`)
 
-```bash
+```sh
 python tools/twin/lerobot_convert.py --raw data/twin_raw --root data/panthera_twin_v1 \
-    --repo-id <tài khoản>/panthera_twin_v1
+    --repo-id <user>/panthera_twin_v1
 ```
 
-Đặt tên dataset theo phiên bản, ví dụ `panthera_twin_v1`, `panthera_twin_v2`. Không sửa một phiên bản sau khi đã dùng nó để huấn luyện mô hình được báo cáo.
+Datasets carry a version suffix (`panthera_twin_v1`, `panthera_twin_v2`). A version is immutable once a reported model has been trained on it.
 
-## 4. Huấn luyện
+## 3. Training
 
-| Mô hình | Vai trò | Nơi huấn luyện |
+| Model | Role | Hardware |
 |---|---|---|
-| Mô hình VLA đã chọn (SmolVLA hoặc Evo-1) | Mô hình chính | RTX 5090 hoặc Kaggle |
-| ACT (Action Chunking with Transformers) | Mô hình đối chứng không dùng ngôn ngữ | Bất kỳ GPU ≥ 6 GB |
+| Selected VLA (SmolVLA or Evo-1) | Main model | RTX 5090 or Kaggle |
+| ACT (Action Chunking with Transformers) | Baseline without language | Any GPU with 6 GB or more |
 
-Mỗi lần huấn luyện được báo cáo phải lưu:
+Every reported training run stores:
 
-- commit của repo;
-- phiên bản dataset;
-- file cấu hình đầy đủ: siêu tham số, seed, số bước;
-- checkpoint cuối và log huấn luyện, tải lên Hugging Face Hub hoặc Kaggle.
+- the repository commit;
+- the dataset version;
+- the full configuration: hyperparameters, seed, step count;
+- the final checkpoint and the training log, uploaded to the Hugging Face Hub or Kaggle.
 
-GPU đời Turing (GTX 1660 Ti, Kaggle T4) không hỗ trợ bf16 bằng phần cứng. Trên các GPU này, đặt kiểu dữ liệu là fp16 hoặc fp32.
+Turing GPUs (GTX 1660 Ti, Kaggle T4) lack hardware bf16; use fp16 or fp32 there.
 
-## 5. Chạy policy trong mô phỏng
+`notebooks/kaggle_train_panthera_twin.ipynb` contains the ACT and SmolVLA training commands used on Kaggle.
 
-```bash
-# môi trường LeRobot
-python tools/twin/policy_bridge.py serve --checkpoint <đường dẫn checkpoint>
+## 4. Running a policy in simulation
 
-# môi trường RoboTwin, cửa sổ khác
+```sh
+# LeRobot environment
+python tools/twin/policy_bridge.py serve --checkpoint <checkpoint>/pretrained_model \
+    --camera-map wrist=camera1,workspace=camera2
+
+# RoboTwin environment, second terminal
 python tools/twin/twin_console.py --executor policy --policy-server 127.0.0.1:5555 --level 2
 ```
 
-Cách đánh giá và báo cáo kết quả: [evaluation-protocol.md](evaluation-protocol.md).
+`--camera-map` applies to SmolVLA fine-tuned from `smolvla_base`, which expects cameras named `camera1` to `camera3`.
+
+Evaluation and reporting: [evaluation protocol](evaluation-protocol.md).

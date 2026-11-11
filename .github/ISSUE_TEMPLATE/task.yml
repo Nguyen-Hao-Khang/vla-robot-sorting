@@ -1,48 +1,38 @@
-name: Đầu việc
-description: Một đầu việc trong kế hoạch dự án
+name: Task
+description: A work item from docs/project-plan.md
 title: "<type>(<scope>): <summary>"
+labels: ["task"]
 body:
+  - type: input
+    id: item
+    attributes:
+      label: Plan item
+      description: ID from docs/project-plan.md, for example 1.3
+    validations:
+      required: true
   - type: dropdown
     id: phase
     attributes:
-      label: Giai đoạn
+      label: Phase
       options:
-        - "1. Dữ liệu mô phỏng và chọn mô hình"
-        - "2. Huấn luyện và đánh giá trong mô phỏng"
-        - "3. Tích hợp robot thật"
-        - "4. Thực nghiệm trên robot thật"
-        - "5. Hoàn thiện báo cáo"
+        - "1. Simulation data and model selection"
+        - "2. Training and simulated evaluation"
+        - "3. Real-robot integration"
+        - "4. Real-robot experiments"
+        - "5. Write-up and release"
     validations:
       required: true
   - type: textarea
-    id: goal
+    id: deliverable
     attributes:
-      label: Mô tả
-      description: Việc cần làm và kết quả bàn giao.
+      label: Deliverable
     validations:
       required: true
   - type: textarea
     id: done
     attributes:
-      label: Tiêu chí hoàn thành
-      description: Các điều kiện kiểm tra được.
+      label: Done when
       placeholder: |
         - [ ] ...
     validations:
       required: true
-  - type: dropdown
-    id: requirement
-    attributes:
-      label: Yêu cầu đề tài
-      multiple: true
-      options:
-        - "1. Tổng quan VLA và cơ chế lệnh → hành động"
-        - "2. Phần cứng, giao thức điều khiển, hệ thu ảnh"
-        - "3. Triển khai và tinh chỉnh VLA"
-        - "4. Ứng dụng phân loại hoàn chỉnh"
-        - "5. Đánh giá"
-  - type: textarea
-    id: notes
-    attributes:
-      label: Ghi chú
-      description: Phụ thuộc, liên kết, rủi ro.

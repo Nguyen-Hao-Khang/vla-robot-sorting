@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Workspace figures of the Panthera-HT arm for the mid-term report (pure numpy + matplotlib).
+"""Workspace figures of the Panthera-HT arm (pure numpy + matplotlib).
 
 Uses only the arm model in twin_kinematics.py (joint chain and limits copied from the robot's
 URDF) and the table layout in twin_scene.py; no simulator or GPU is needed, so the figures can
