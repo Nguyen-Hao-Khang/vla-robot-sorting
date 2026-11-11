@@ -45,6 +45,30 @@ def test_instruction_templates() -> None:
     assert rec.instruction_for("ball", "staging pad", "pad", rng).split()[0] in ("put", "move")
 
 
+def test_vietnamese_names_follow_noun_colour_size_order() -> None:
+    assert rec.vietnamese_name("red cube") == "khối vuông đỏ"
+    assert rec.vietnamese_name("small green cylinder") == "khối trụ xanh lá nhỏ"
+    assert rec.vietnamese_name("yellow tray") == "khay vàng"
+    assert rec.vietnamese_name("deep bin") == "thùng sâu"
+    assert rec.vietnamese_name("fresh milk carton") is None
+
+
+def test_vietnamese_instruction_and_fallback() -> None:
+    rng = random.Random(1)
+    text = rec.instruction_for("red cube", "yellow tray", "tray", rng, "vi")
+    assert "khối vuông đỏ" in text and "khay vàng" in text
+    assert rec.command_language(text) == "vi"
+    fallback = rec.instruction_for("fresh milk carton", "wide tray", "tray", rng, "vi")
+    assert "fresh milk carton" in fallback and rec.command_language(fallback) == "en"
+
+
+def test_every_level_one_to_five_name_has_a_translation() -> None:
+    for number in (1, 2, 4, 5):
+        level = ts.LEVELS[number]
+        for name in [o.name for o in level.objects] + [c.name for c in level.containers]:
+            assert rec.vietnamese_name(name), name
+
+
 def test_sample_task_respects_capacity_location_and_graspability() -> None:
     level = ts.LEVELS[7]
     xyz = _xyz(level)

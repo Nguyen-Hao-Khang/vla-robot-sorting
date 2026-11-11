@@ -149,7 +149,8 @@ vla-robot-sorting/
 ├── tools/
 │   ├── twin/                 Simulation scenes, scripted expert, recorder, LeRobot converter,
 │   │                         policy server, interactive console
-│   └── setup/                Host setup and environment checks
+│   ├── setup/                Host setup and environment checks
+│   └── train/                Unattended Kaggle training run
 ├── src/vla_robot_sorting/
 │   ├── contracts/            Data types for joint paths, trajectories and safety reports
 │   └── safety/               Safety validators applied before execution

@@ -11,7 +11,7 @@ are kept unless --keep-failures is given.
 
 Output is a dependency-free raw format (convert it to a LeRobot dataset with
 tools/twin/lerobot_convert.py, e.g. on Kaggle):
-  <out>/episode_000000/meta.json        task text, level, object, destination, success, fps, ...
+  <out>/episode_000000/meta.json        command, language, level, object, destination, success, ...
   <out>/episode_000000/states.npy       float32 [T, D]  (arm joints + gripper)
   <out>/episode_000000/actions.npy      float32 [T, D]  (next state = joint-position target)
   <out>/episode_000000/<camera>/000000.jpg ...
@@ -51,9 +51,72 @@ PAD_TEMPLATES = (
 )
 
 
-def instruction_for(obj: str, dest: str, kind: str, rng: random.Random) -> str:
+VI_TEMPLATES = (
+    "gắp {obj} bỏ vào {dest}",
+    "đặt {obj} vào {dest}",
+    "chuyển {obj} sang {dest}",
+    "cho {obj} vào {dest}",
+)
+VI_PAD_TEMPLATES = (
+    "đặt {obj} lên {dest}",
+    "chuyển {obj} ra {dest}",
+)
+LANGUAGES = ("en", "vi")
+
+# Vietnamese names are built word by word: noun, then colour, then size ("khối trụ đỏ nhỏ").
+VI_NOUNS = {
+    "cube": "khối vuông",
+    "cylinder": "khối trụ",
+    "triangular prism": "khối lăng trụ tam giác",
+    "tetrahedron": "khối tứ diện",
+    "tray": "khay",
+    "wide tray": "khay rộng",
+    "deep bin": "thùng sâu",
+    "staging pad": "ô trung chuyển",
+    "table": "bàn",
+}
+VI_COLOURS = {
+    "red": "đỏ",
+    "green": "xanh lá",
+    "blue": "xanh dương",
+    "yellow": "vàng",
+    "white": "trắng",
+    "purple": "tím",
+    "orange": "cam",
+}
+VI_SIZES = {"small": "nhỏ", "medium": "vừa", "large": "lớn"}
+
+
+def vietnamese_name(name: str) -> str | None:
+    """Vietnamese for an English object or container name, or None if a word is unknown."""
+    words = name.split()
+    size = VI_SIZES.get(words[0]) if words else None
+    if size:
+        words = words[1:]
+    colour = VI_COLOURS.get(words[0]) if words else None
+    if colour:
+        words = words[1:]
+    noun = VI_NOUNS.get(" ".join(words))
+    if noun is None:
+        return None
+    return " ".join(part for part in (noun, colour, size) if part)
+
+
+def instruction_for(
+    obj: str, dest: str, kind: str, rng: random.Random, language: str = "en"
+) -> str:
+    """One command for moving obj to dest; falls back to English when a name has no translation."""
+    if language == "vi":
+        obj_vi, dest_vi = vietnamese_name(obj), vietnamese_name(dest)
+        if obj_vi and dest_vi:
+            template = rng.choice(VI_PAD_TEMPLATES if kind == "pad" else VI_TEMPLATES)
+            return template.format(obj=obj_vi, dest=dest_vi)
     template = rng.choice(PAD_TEMPLATES if kind == "pad" else TEMPLATES)
     return template.format(obj=obj, dest=dest)
+
+
+def command_language(text: str) -> str:
+    return "vi" if any(ord(ch) > 127 for ch in text) else "en"
 
 
 def sample_task(
@@ -202,10 +265,18 @@ def main(argv: list[str] | None = None) -> int:
         "--fps", type=float, default=0.0, help="0 = configs/twin_cameras.json record.fps"
     )
     parser.add_argument("--keep-failures", action="store_true")
+    parser.add_argument(
+        "--languages",
+        default="en,vi",
+        help="command languages, sampled uniformly per episode (en, vi)",
+    )
     args = parser.parse_args(argv)
+    languages = [v.strip() for v in args.languages.split(",") if v.strip()]
+    if not languages or any(v not in LANGUAGES for v in languages):
+        parser.error(f"languages must be a subset of {','.join(LANGUAGES)}")
     levels = [int(v) for v in args.levels.split(",") if v.strip()]
     if any(v not in ts.LEVELS for v in levels) or args.episodes < 1:
-        parser.error("levels must be in 1..6 and episodes >= 1")
+        parser.error("levels must be in 1..7 and episodes >= 1")
 
     from twin_console import Twin
     from twin_geometry import CAMERA_CONFIG
@@ -243,7 +314,8 @@ def main(argv: list[str] | None = None) -> int:
             if task is None:
                 break
             obj, dest = task
-            text = instruction_for(obj, dest, twin.level.container(dest).kind, rng)
+            kind = twin.level.container(dest).kind
+            text = instruction_for(obj, dest, kind, rng, rng.choice(languages))
             attempted += 1
             recorder.start()
             outcome = twin.pick_and_place(obj, dest, echo=lambda _m: None)
@@ -260,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
                     break
             meta = {
                 "task": text,
+                "language": command_language(text),
                 "level": level,
                 "object": obj,
                 "destination": dest,
