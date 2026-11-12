@@ -133,4 +133,4 @@ Notes for Windows:
 - If an expired Hugging Face token is stored, public downloads fail with HTTP 401. Set `HF_HUB_DISABLE_IMPLICIT_TOKEN=1`.
 - Evo-1 defaults to bfloat16 and flash attention. Turing GPUs (GTX 16 series, T4) support neither, so set `--policy.dtype=float16 --policy.use_amp=false --policy.use_flash_attn=false`.
 
-The Evo-1 smoke test is repeated on a Kaggle T4 (16 GB) with `notebooks/kaggle_smoke_vla.ipynb`, which runs both models in one LeRobot environment and records wall time, peak GPU memory and the last loss in `results.json`. Kaggle GPUs require a phone-verified account.
+On a Kaggle T4 (16 GB) both models pass with `notebooks/kaggle_smoke_vla.ipynb` (batch 8, one environment with LeRobot `e581c1d`): SmolVLA peaks at 3.9 GB, Evo-1 at 5.6 GB in fp16 with eager attention. Kaggle GPUs require a phone-verified account. Inference measurements are in [ADR 0005](adr/0005-vla-model-selection.md).

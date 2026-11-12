@@ -3,7 +3,7 @@
 """Convert raw twin episodes (twin_record.py output) into a LeRobot dataset for ACT / SmolVLA.
 
 Runs in a LeRobot environment (e.g. a Kaggle notebook), not in the RoboTwin env. Tested with
-lerobot 0.4.4. Features written:
+lerobot 0.4.4 and 0.7.1 (commit e581c1d). Features written:
   observation.state                 float32 [D]  arm joints + gripper
   action                            float32 [D]  next joint-position target
   observation.images.<camera>       video (or image with --images) per recorded camera

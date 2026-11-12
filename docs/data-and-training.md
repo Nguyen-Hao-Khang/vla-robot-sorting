@@ -58,6 +58,8 @@ python tools/twin/twin_record.py --out data/repro_b --episodes 50 --seed 0
 python tools/twin/compare_recordings.py data/repro_a data/repro_b
 ```
 
+`tools/data/dataset_card.py <raw dir>` writes a dataset card (README.md) with the split by language, command form, references, scene sizes and destination attributes, so a recording can be checked against the task specification before training.
+
 ### 2.2 LeRobot dataset (`lerobot_convert.py`)
 
 ```sh
