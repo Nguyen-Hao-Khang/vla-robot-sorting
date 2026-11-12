@@ -16,6 +16,10 @@ sapien:
 lerobot:
   pypi: lerobot[smolvla]==0.4.4
 
+lerobot_main:  # SmolVLA, Evo-1 and ACT in one environment (Python 3.12); used on Kaggle
+  url: https://github.com/huggingface/lerobot.git
+  commit: e581c1d5701f846788662079d4ac08835c96def9
+
 reference:
   robotwin_upstream:
     url: https://github.com/robotwin-Platform/RoboTwin.git
