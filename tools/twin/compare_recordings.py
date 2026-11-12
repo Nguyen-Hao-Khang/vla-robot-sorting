@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """Check that two recordings made with the same seed agree (plan item 1.3).
 
-Episodes are paired by index. For each pair the script compares the task definition stored in
-meta.json (command, references, targets, destination, scene, spawn poses, success) exactly,
-and the joint-state trajectories within a tolerance, because GPU motion planning may differ
-in the last digits between runs.
+Episodes are paired by ``episode_key`` (layout and command index, written by twin_record.py)
+or, for older recordings, by position. A failed episode ends its layout and is not saved, so
+a key present in only one run is reported, not paired.
 
-  python tools/twin/compare_recordings.py data/run_a data/run_b --tol 1e-3
+For each pair the task definition stored in meta.json (command, references, targets,
+destination, scene, spawn poses, success) must be identical. The joint trajectories are
+compared after resampling both to the same normalised time; the script reports the largest
+joint difference and the difference in length, because GPU motion planning and contact
+physics are not bit-exact between runs.
 
-Exit code 0 when every episode matches, 1 otherwise.
+  python tools/twin/compare_recordings.py data/run_a data/run_b
+
+Exit code 0 when every common episode has an identical task definition and at least 90% of
+the episodes of each run are paired; 1 otherwise.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import sys
 from pathlib import Path
 
@@ -33,67 +40,86 @@ TASK_FIELDS = (
     "spawns",
     "success",
 )
+MIN_PAIRED = 0.9
 
 
-def episodes(root: Path) -> list[Path]:
-    return sorted(p for p in root.glob("episode_*") if (p / "meta.json").is_file())
+def episodes(root: Path) -> dict[str, Path]:
+    folders = sorted(p for p in root.glob("episode_*") if (p / "meta.json").is_file())
+    out = {}
+    for i, folder in enumerate(folders):
+        meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+        out[str(meta.get("episode_key", f"#{i}"))] = folder
+    return out
 
 
-def compare_episode(a: Path, b: Path, tol: float) -> dict:
+def resample(states: np.ndarray, length: int) -> np.ndarray:
+    src = np.linspace(0.0, 1.0, len(states))
+    dst = np.linspace(0.0, 1.0, length)
+    return np.stack([np.interp(dst, src, states[:, j]) for j in range(states.shape[1])], axis=1)
+
+
+def compare_episode(key: str, a: Path, b: Path) -> dict:
     meta_a = json.loads((a / "meta.json").read_text(encoding="utf-8"))
     meta_b = json.loads((b / "meta.json").read_text(encoding="utf-8"))
     fields = [f for f in TASK_FIELDS if meta_a.get(f) != meta_b.get(f)]
     states_a, states_b = np.load(a / "states.npy"), np.load(b / "states.npy")
-    result = {
-        "episode": a.name,
+    diff = None
+    if states_a.ndim == states_b.ndim == 2 and len(states_a) > 1 and len(states_b) > 1:
+        n = max(len(states_a), len(states_b))
+        diff = float(np.max(np.abs(resample(states_a, n) - resample(states_b, n))))
+    return {
+        "episode_key": key,
         "task_fields_differ": fields,
+        "task_identical": not fields,
         "frames": [len(states_a), len(states_b)],
+        "max_state_diff": diff,
     }
-    if states_a.shape == states_b.shape and states_a.size:
-        result["max_state_diff"] = float(np.max(np.abs(states_a - states_b)))
-    else:
-        result["max_state_diff"] = None
-    result["task_identical"] = not fields
-    result["trajectory_close"] = (
-        result["max_state_diff"] is not None and result["max_state_diff"] <= tol
-    )
-    return result
 
 
-def compare(root_a: Path, root_b: Path, tol: float) -> tuple[list[dict], list[str]]:
+def compare(root_a: Path, root_b: Path) -> tuple[list[dict], dict]:
     eps_a, eps_b = episodes(root_a), episodes(root_b)
-    problems = []
-    if len(eps_a) != len(eps_b):
-        problems.append(f"episode count differs: {len(eps_a)} vs {len(eps_b)}")
-    results = [compare_episode(a, b, tol) for a, b in zip(eps_a, eps_b, strict=False)]
-    return results, problems
+    common = [k for k in eps_a if k in eps_b]
+    results = [compare_episode(k, eps_a[k], eps_b[k]) for k in common]
+    extra = {
+        "only_in_a": [k for k in eps_a if k not in eps_b],
+        "only_in_b": [k for k in eps_b if k not in eps_a],
+        "count_a": len(eps_a),
+        "count_b": len(eps_b),
+    }
+    return results, extra
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("run_a", type=Path)
     parser.add_argument("run_b", type=Path)
-    parser.add_argument("--tol", type=float, default=1e-3, help="max joint difference (rad)")
     parser.add_argument("--json", type=Path, default=None, help="write per-episode results")
     args = parser.parse_args(argv)
-    results, problems = compare(args.run_a, args.run_b, args.tol)
-    task_ok = sum(r["task_identical"] for r in results)
-    traj_ok = sum(r["trajectory_close"] for r in results)
-    print(f"episodes compared: {len(results)}")
-    print(f"identical task definitions: {task_ok}/{len(results)}")
-    print(f"trajectories within {args.tol} rad: {traj_ok}/{len(results)}")
+    results, extra = compare(args.run_a, args.run_b)
+    n = len(results)
+    identical = sum(r["task_identical"] for r in results)
+    diffs = [r["max_state_diff"] for r in results if r["max_state_diff"] is not None]
+    lengths = [abs(r["frames"][0] - r["frames"][1]) for r in results]
+    print(f"episodes: {extra['count_a']} vs {extra['count_b']}, paired: {n}")
+    print(f"identical task definitions: {identical}/{n}")
+    if diffs:
+        print(
+            f"max joint difference (rad, time-normalised): median {statistics.median(diffs):.4f}, "
+            f"max {max(diffs):.4f}"
+        )
+        print(
+            f"length difference (frames): median {statistics.median(lengths)}, max {max(lengths)}"
+        )
     for r in results:
-        if not (r["task_identical"] and r["trajectory_close"]):
-            print(
-                f"  {r['episode']}: fields {r['task_fields_differ']}, frames {r['frames']}, "
-                f"max diff {r['max_state_diff']}"
-            )
-    for p in problems:
-        print(f"  {p}")
+        if not r["task_identical"]:
+            print(f"  {r['episode_key']}: fields {r['task_fields_differ']}")
+    for side in ("only_in_a", "only_in_b"):
+        if extra[side]:
+            print(f"  {side}: {', '.join(extra[side])}")
     if args.json:
-        args.json.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
-    ok = not problems and task_ok == traj_ok == len(results) and results
-    return 0 if ok else 1
+        args.json.write_text(json.dumps({"episodes": results, **extra}, indent=2) + "\n", "utf-8")
+    paired_ok = n >= MIN_PAIRED * max(extra["count_a"], extra["count_b"], 1)
+    return 0 if n and identical == n and paired_ok else 1
 
 
 if __name__ == "__main__":

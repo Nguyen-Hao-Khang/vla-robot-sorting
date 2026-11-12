@@ -50,7 +50,7 @@ python tools/twin/twin_record.py --out data/twin_raw --episodes 50 --task sortin
 
 `--task sorting` (default) builds a new procedural scene from [the task specification](task-spec.md) for every layout and records `--episodes-per-layout` commands in it; `meta.json` stores the command kind, the object and container references, the allowed targets and the full scene. Each episode draws its command language uniformly from `--languages`. `--task levels` records the fixed scene levels instead. With `configs/command_templates.json` present, 70% of commands use its language-model templates and the rest use the built-in templates.
 
-Two recordings with the same `--seed` must agree. `tools/twin/compare_recordings.py` pairs their episodes, checks that the task definitions in `meta.json` (command, references, targets, destination, scene, spawn poses, success) are identical and that the joint trajectories agree within a tolerance (default 0.001 rad), since GPU motion planning can differ in the last digits:
+Two recordings with the same `--seed` must agree. Each layout and each command draws from its own generator derived from the seed, and Python, NumPy and PyTorch are reseeded before every episode, so a failed episode (which ends its layout) does not shift the ones after it; `meta.json` stores the `episode_key` (layout and command index). `tools/twin/compare_recordings.py` pairs episodes by that key, requires identical task definitions (command, references, targets, destination, scene, spawn poses, success) and reports how far the joint trajectories differ after time normalisation, since GPU motion planning and contact physics are not bit-exact:
 
 ```sh
 python tools/twin/twin_record.py --out data/repro_a --episodes 50 --seed 0

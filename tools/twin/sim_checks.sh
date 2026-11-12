@@ -13,12 +13,14 @@
 # The expert results are the upper reference for the learned policies and check the
 # evaluation script itself. Outputs go to $WORK/sim_checks_<time>/.
 #
-# Settings: EPISODES=50 EVAL_EPISODES=30 ROBOTWIN_ROOT=... WORK=~/vrs-data
+# Settings: EPISODES=50 EVAL_EPISODES=30 SKIP_EVAL=0 ROBOTWIN_ROOT=... WORK=~/vrs-data
+# SKIP_EVAL=1 runs only the reproducibility check (step 1).
 set -euo pipefail
 
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 EPISODES=${EPISODES:-50}
 EVAL_EPISODES=${EVAL_EPISODES:-30}
+SKIP_EVAL=${SKIP_EVAL:-0}
 ROBOTWIN_ROOT=${ROBOTWIN_ROOT:-$HOME/worktrees/Panthera-HT_RoboTwin/RoboTwin}
 WORK=${WORK:-$HOME/vrs-data}
 OUT="$WORK/sim_checks_$(date +%Y%m%d-%H%M)"
@@ -40,6 +42,7 @@ set +e
 python "$TWIN/compare_recordings.py" "$OUT/repro_a" "$OUT/repro_b" --json "$OUT/compare.json" \
     | tee "$OUT/compare.txt"
 set -e
+[ "$SKIP_EVAL" = 1 ] && { echo "Done (reproducibility only). Results in $OUT"; exit 0; }
 
 log "2/3 expert evaluation"
 for lang in en vi; do
