@@ -20,11 +20,11 @@ In simulation, a script computes the metrics from simulator state. On the real r
 
 | ID | Question | Conditions |
 |---|---|---|
-| E1 | How often does the fine-tuned VLA succeed in simulation? | Vietnamese vs English commands; training-style commands vs held-out test commands; object vs class commands; criterion (colour, shape, size) |
+| E1 | How often does the fine-tuned VLA succeed in simulation? | Vietnamese vs English commands; training-style commands vs held-out test commands; object vs class commands; criterion (colour, shape, size); object family (blocks vs household items) |
 | E2 | How much does language input contribute? | Fine-tuned VLA vs ACT on identical scenes and seeds |
 | E3 | How much performance transfers to the real arm? | Trained on simulation only, real only, simulation + real |
 
-Extensions, time permitting: sorting by semantic category; robustness to camera pose, lighting and distractor objects.
+Extensions, time permitting: household items on the real arm; robustness to camera pose, lighting and distractor objects.
 
 ## 3. Trials and statistics
 

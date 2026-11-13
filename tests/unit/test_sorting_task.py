@@ -131,3 +131,55 @@ def test_round_container_inside_and_walls() -> None:
     assert len(boxes) == 1 + ts.ROUND_SEGMENTS
     for (cx, cy, _), _half in boxes[1:]:
         assert math.isclose(math.hypot(cx, cy), 0.05 + ts.WALL_T / 2, rel_tol=1e-6)
+
+
+def test_household_scenes_have_a_look_alike_pair_and_identity_references() -> None:
+    for seed in range(50):
+        scene = st.sample_scene(random.Random(seed), family="household")
+        assert scene.family == "household" and 2 <= len(scene.objects) <= 4
+        categories = [o.category for o in scene.objects]
+        assert any(categories.count(c) == 2 for c in categories)
+        assert len({o.name for o in scene.objects}) == len(scene.objects)
+        for o in scene.objects:
+            refs = st.object_references(scene, o.name)
+            assert (("item", o.item),) in refs
+            if categories.count(o.category) == 2:
+                assert (("category", o.category),) not in refs
+
+
+def test_household_commands_use_item_and_category_phrases() -> None:
+    scene = st.Scene(
+        tuple(
+            st.SceneObject(item, cat, "", "", (0.1 * i, 0.0), 0.0, item=item, category=cat)
+            for i, (item, cat) in enumerate(
+                [
+                    ("fresh milk carton", "milk carton"),
+                    ("soy milk carton", "milk carton"),
+                    ("box 2", "numbered box"),
+                ]
+            )
+        ),
+        st.sample_scene(random.Random(0)).containers,
+    )
+    assert st.describe_object((("item", "soy milk carton"),), "vi", True) == "hộp sữa đậu nành"
+    assert st.describe_object((("item", "box 2"),), "en", True) == "the box number 2"
+    assert st.describe_object((("category", "milk carton"),), "en", False) == "a milk carton"
+    assert st.describe_object((("category", "bottle"),), "vi", False) == "một chai nước"
+    rng = random.Random(3)
+    for _ in range(40):
+        cmd = st.make_command(scene, rng, rng.choice(["en", "vi"]), 0.5)
+        if cmd.kind == "class":
+            assert cmd.object_reference[0][0] == "category"
+            if cmd.object_reference[0][1] == "milk carton":
+                assert set(cmd.targets) == {"fresh milk carton", "soy milk carton"}
+        else:
+            assert len(cmd.targets) == 1
+
+
+def test_household_to_level_uses_textured_packages() -> None:
+    scene = st.sample_scene(random.Random(1), family="household")
+    level = st.to_level(scene)
+    assert [o.name for o in level.objects] == [o.name for o in scene.objects]
+    assert all(o.visual is not None and o.mass >= 0.05 for o in level.objects)
+    soda = st.household_spec("soft drink bottle")
+    assert soda.visual == ("bottle", "soda") and soda.shape == "bottle"

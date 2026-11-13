@@ -40,7 +40,7 @@ Language-conditioned object sorting on the Panthera-HT robot arm with a small vi
 4. Integrate the model with the arm into a complete sorting application.
 5. Evaluate recognition, language understanding and manipulation reliability, in simulation and on the real arm.
 
-Sorting by printed labels and by semantic category (for example "drinks") is an extension in simulation, attempted only after the geometry and colour criteria work.
+Sorting by printed identity and semantic category (milk cartons, numbered boxes, bottles) is an extension: part of the simulated data and evaluation, and on the real arm if time permits.
 
 ## Method
 
