@@ -1007,11 +1007,21 @@ def yaw_quat(yaw: float) -> tuple[float, float, float, float]:
 # ----------------------------------------------------------------- SAPIEN builders (GPU env)
 
 
-def _physical_material(scene):
+# Friction of the object surface (static and dynamic). Bottles are held only by the neck and cap
+# while the gripper is tilted, and slipped out of the fingers with 1.0 (13 November 2026); a
+# rubber-padded gripper on a ridged plastic cap grips much better than wood on wood.
+GRIP_FRICTION = {"bottle": 2.0}
+
+
+def grip_friction(obj: ObjectSpec) -> float:
+    return GRIP_FRICTION.get(obj.shape, 1.0)
+
+
+def _physical_material(scene, friction: float = 1.0):
     import sapien
 
     try:
-        return sapien.physx.PhysxMaterial(1.0, 1.0, 0.0)
+        return sapien.physx.PhysxMaterial(friction, friction, 0.0)
     except Exception:  # fall back to the scene default
         return scene.default_physical_material
 
@@ -1059,7 +1069,7 @@ def build_object(
 
     builder = scene.create_actor_builder()
     builder.set_physx_body_type("dynamic")
-    physical = _physical_material(scene)
+    physical = _physical_material(scene, grip_friction(obj))
     look = sapien.render.RenderMaterial(base_color=[*obj.rgb, 1])
     r, h = obj.radius, obj.half_height
     up = sapien.Pose(q=list(UPRIGHT_Q))
