@@ -38,9 +38,8 @@ def object_box(obj: ts.ObjectSpec, xyz, q, pad: float = OBSTACLE_PAD) -> Box:
     if obj.shape == "box" and obj.half_extents:
         half = np.asarray(obj.half_extents, float)
         centre_local = np.zeros(3)
-    elif obj.shape in ("prism", "tetrahedron"):
-        fn = ts.prism_vertices if obj.shape == "prism" else ts.tetra_vertices
-        verts = np.asarray(fn(obj.radius, obj.half_height))
+    elif obj.shape in ("prism", "tetrahedron", "halfcyl"):
+        verts = np.asarray(ts.mesh_vertices(obj))
         lo, hi = verts.min(axis=0), verts.max(axis=0)
         half, centre_local = (hi - lo) / 2, (hi + lo) / 2
     else:  # cube, cylinder, bottle, sphere

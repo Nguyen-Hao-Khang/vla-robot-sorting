@@ -254,3 +254,35 @@ def test_tilted_variants_keep_the_finger_axis_horizontal() -> None:
         t > tg.TOPDOWN_TOL_DEG
         for t in tg.plan_grasp(tetra, [0.15, -0.04, 0.76], UP, [], "y", allow_tilt=True).frame_tilts
     )
+
+
+def test_upright_bottle_is_grasped_by_neck_and_cap() -> None:
+    from dataclasses import replace
+
+    small = ts.LEVELS[7].object("water bottle")
+    large = replace(small, radius=0.0325, half_height=0.1025)  # 500 ml: wider than the gripper
+    assert 2 * large.radius > tg.GRIPPER_MAX_OPEN
+    for bottle in (small, large):
+        choice = tg.plan_grasp(bottle, [0.0, -0.05, TABLE + bottle.half_height], UP, [], "y")
+        assert choice.ok and not choice.lying
+        assert math.isclose(choice.width, 2 * ts.bottle_cap_radius(bottle.radius))
+        top = bottle.half_height
+        assert top - 0.03 < choice.grasp_offset_world[2] < top - ts.GRASP_TOP_MARGIN
+        # the release height uses the grasp point: the fingertips sit near the top
+        above_bottom = choice.vertical_half + choice.grasp_offset_world[2]
+        assert ts.release_gap(ts.DEEP_BIN, bottle, 0.0, above_bottom) == ts.MIN_DROP
+    lying = tg.plan_grasp(large, [0.0, -0.05, TABLE + large.radius], LYING_X, [], "y")
+    assert not lying.ok and "too wide" in lying.reason
+
+
+def test_half_cylinder_grasps() -> None:
+    half = ts.ObjectSpec("half", "halfcyl", "orange", (1, 0.5, 0), 0.02, 0.01, (0.02, 0.015, 0.01))
+    assert math.isclose(tg.support(half, UP, (0, 0, 1)), 0.01)
+    assert math.isclose(tg.support(half, UP, (1, 0, 0)), 0.02)
+    flat = tg.plan_grasp(half, [0.0, -0.05, TABLE + 0.01], UP, [], "y")
+    assert flat.ok and math.isclose(flat.width, 0.03)  # across the two half-disc faces
+    assert abs(flat.finger_world[1]) > 0.99
+    on_end = tg.plan_grasp(half, [0.0, -0.05, TABLE + 0.015], LYING_X, [], "y")
+    assert on_end.ok and math.isclose(on_end.width, 0.02)
+    rolled = tg.plan_grasp(half, [0.0, -0.05, TABLE + 0.02], _q_axis((0, 1, 0), 90), [], "y")
+    assert not rolled.ok and "curved" in rolled.reason

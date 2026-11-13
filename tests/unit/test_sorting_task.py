@@ -138,13 +138,47 @@ def test_household_scenes_have_a_look_alike_pair_and_identity_references() -> No
         scene = st.sample_scene(random.Random(seed), family="household")
         assert scene.family == "household" and 2 <= len(scene.objects) <= 4
         categories = [o.category for o in scene.objects]
-        assert any(categories.count(c) == 2 for c in categories)
+        items = [o.item for o in scene.objects]
+        assert any(categories.count(c) >= 2 for c in categories)
         assert len({o.name for o in scene.objects}) == len(scene.objects)
         for o in scene.objects:
             refs = st.object_references(scene, o.name)
-            assert (("item", o.item),) in refs
-            if categories.count(o.category) == 2:
+            assert (o.size != "") == (o.item in st.BOTTLE_ITEMS)
+            if items.count(o.item) == 1:
+                assert (("item", o.item),) in refs
+            else:  # the same bottle in both sizes: size decides
+                assert (("item", o.item), ("size", o.size)) in refs
+            assert (("size", o.size),) not in refs
+            if categories.count(o.category) >= 2:
                 assert (("category", o.category),) not in refs
+
+
+def test_household_bottles_have_sizes_and_size_pairs() -> None:
+    pairs = 0
+    for seed in range(200):
+        scene = st.sample_scene(random.Random(seed), family="household")
+        level = st.to_level(scene)
+        for o, spec in zip(scene.objects, level.objects, strict=True):
+            if o.size:
+                radius, half_height = st.BOTTLE_SIZES[o.size]
+                assert (spec.radius, spec.half_height) == (radius, half_height)
+                assert spec.mass == st.BOTTLE_MASS[o.size]
+                assert spec.grip_width <= 0.035  # grasped by the cap, not the body
+        items = [o.item for o in scene.objects]
+        if any(items.count(i) == 2 for i in st.BOTTLE_ITEMS):
+            pairs += 1
+            names = {o.name for o in scene.objects}
+            assert any(n.startswith(("small ", "large ")) for n in names)
+    assert 10 <= pairs <= 60
+    assert st.describe_object((("item", "water bottle"), ("size", "large")), "en", True) == (
+        "the large water bottle"
+    )
+    assert st.describe_object((("item", "water bottle"), ("size", "large")), "vi", True) == (
+        "chai nước suối lớn"
+    )
+    assert st.describe_object((("category", "bottle"), ("size", "small")), "vi", False) == (
+        "một chai nước nhỏ"
+    )
 
 
 def test_household_commands_use_item_and_category_phrases() -> None:
@@ -183,8 +217,9 @@ def test_household_to_level_uses_textured_packages() -> None:
     level = st.to_level(scene)
     assert [o.name for o in level.objects] == [o.name for o in scene.objects]
     assert all(o.visual is not None and o.mass >= 0.05 for o in level.objects)
-    soda = st.household_spec("soft drink bottle")
+    soda = st.household_spec("soft drink bottle", "large")
     assert soda.visual == ("bottle", "soda") and soda.shape == "bottle"
+    assert soda.radius > st.household_spec("soft drink bottle", "small").radius
 
 
 def test_kit_scenes_use_only_real_kit_pieces() -> None:

@@ -17,6 +17,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
+import twin_scene as ts
 
 PX_PER_M = 4000  # texture resolution on box faces (4.5 cm -> 180 px)
 
@@ -299,16 +300,18 @@ def bottle_profile(radius: float, half_height: float) -> list[tuple[float, float
     """Body, shoulder, neck and cap of a small PET bottle (bottom to top), origin at mid-height."""
     H = 2 * half_height
     z = lambda f: -half_height + f * H  # noqa: E731
-    neck = radius * 0.55
+    neck = ts.bottle_neck_radius(radius)
+    cap = ts.bottle_cap_radius(radius)
+    cap_bottom = half_height - ts.bottle_cap_height(half_height)
     return [
         (radius * 0.92, z(0.0)),
         (radius, z(0.03)),
         (radius, z(0.62)),
         (radius * 0.8, z(0.72)),
         (neck, z(0.80)),
-        (neck, z(0.86)),
-        (neck * 1.12, z(0.86)),
-        (neck * 1.12, z(1.0)),
+        (neck, cap_bottom),
+        (cap, cap_bottom),
+        (cap, z(1.0)),
     ]
 
 
