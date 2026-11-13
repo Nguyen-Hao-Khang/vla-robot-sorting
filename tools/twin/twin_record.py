@@ -287,7 +287,13 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
         layout += 1
         layout_rng = random.Random(f"{args.seed}/layout/{layout}")
         family_rng = random.Random(f"{args.seed}/family/{layout}")
-        family = "household" if family_rng.random() < args.household_share else "blocks"
+        draw = family_rng.random()
+        if draw < args.household_share:
+            family = "household"
+        elif draw < args.household_share + args.kit_share:
+            family = "kit"
+        else:
+            family = "blocks"
         scene = st.sample_scene(layout_rng, family=family)
         twin.custom_level = st.to_level(scene)
         print(
@@ -403,6 +409,12 @@ def main(argv: list[str] | None = None) -> int:
         choices=("sorting", "levels"),
         default="sorting",
         help="sorting: procedural scenes from docs/task-spec.md; levels: the fixed scene levels",
+    )
+    parser.add_argument(
+        "--kit-share",
+        type=float,
+        default=0.3,
+        help="sorting task: fraction of layouts with pieces of the real wooden kit",
     )
     parser.add_argument(
         "--household-share",

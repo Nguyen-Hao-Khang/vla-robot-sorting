@@ -150,7 +150,9 @@ def test_household_scenes_have_a_look_alike_pair_and_identity_references() -> No
 def test_household_commands_use_item_and_category_phrases() -> None:
     scene = st.Scene(
         tuple(
-            st.SceneObject(item, cat, "", "", (0.1 * i, 0.0), 0.0, item=item, category=cat)
+            st.SceneObject(
+                item, cat, "", "", (0.1 * i, 0.0), 0.0, item=item, category=cat, family="household"
+            )
             for i, (item, cat) in enumerate(
                 [
                     ("fresh milk carton", "milk carton"),
@@ -183,3 +185,22 @@ def test_household_to_level_uses_textured_packages() -> None:
     assert all(o.visual is not None and o.mass >= 0.05 for o in level.objects)
     soda = st.household_spec("soft drink bottle")
     assert soda.visual == ("bottle", "soda") and soda.shape == "bottle"
+
+
+def test_kit_scenes_use_only_real_kit_pieces() -> None:
+    catalogue = set(st.KIT_CATALOGUE)
+    for seed in range(50):
+        scene = st.sample_scene(random.Random(seed), family="kit")
+        assert scene.family == "kit"
+        assert all((o.shape, o.size, o.colour) in catalogue for o in scene.objects)
+        level = st.to_level(scene)
+        for spec, o in zip(level.objects, scene.objects, strict=True):
+            narrow = 2 * min(spec.half_extents[:2]) if spec.half_extents else spec.grip_width
+            assert narrow <= 0.045, (o.name, narrow)
+    assert st.describe_object((("colour", "natural"), ("shape", "cube")), "en", True) == (
+        "the natural wood cube"
+    )
+    assert st.describe_object((("colour", "natural"),), "vi", False) == "một vật màu gỗ mộc"
+    assert st.describe_object((("colour", "purple"), ("shape", "cuboid")), "vi", True) == (
+        "khối hộp chữ nhật tím"
+    )
