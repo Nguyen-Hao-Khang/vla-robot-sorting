@@ -58,6 +58,8 @@ python tools/twin/twin_record.py --out data/repro_b --episodes 50 --seed 0
 python tools/twin/compare_recordings.py data/repro_a data/repro_b
 ```
 
+Result on 13 November 2026 (commit `acc8d24`, two runs of 50 episodes with seed 0): 49 episodes paired, all 49 with identical task definitions; the one unpaired episode in each run follows a failed expert attempt in the other run. Joint trajectories differ by a median of 0.094 rad (maximum 0.40 rad) after time normalisation and by a median of 2 frames in length, so recordings are reproducible at the task level but not trajectory by trajectory. The scripted expert failed 3 of 52 and 3 of 53 attempts; failed attempts are not saved.
+
 `tools/data/dataset_card.py <raw dir>` writes a dataset card (README.md) with the split by language, command form, references, scene sizes and destination attributes, so a recording can be checked against the task specification before training.
 
 ### 2.2 LeRobot dataset (`lerobot_convert.py`)
