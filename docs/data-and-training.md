@@ -96,6 +96,8 @@ EPISODES=80 bash tools/train/kaggle_overnight.sh
 
 It needs a Kaggle API token in `~/.kaggle/kaggle.json`.
 
+`/kaggle/working` holds about 20 GB. The notebook keeps only the `KEEP_CHECKPOINTS` newest checkpoints while training and the newest one at the end; on 13 November 2026 an Evo-1 run that kept every checkpoint (about 3 GB each) ran out of disk at step 6,000. To continue a stopped run, attach the earlier kernel's output as an input (`kernel_sources` in `kernel-metadata.json`) and set `RESUME = {"evo1": 5000}` in the parameters cell.
+
 ## 4. Running a policy in simulation
 
 ```sh
