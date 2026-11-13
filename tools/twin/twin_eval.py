@@ -341,6 +341,7 @@ def episode_record(run: dict, index: int, plan: EpisodePlan, before, after, resu
 
 def run(args) -> int:
     from twin_console import Twin, record_size
+    from twin_record import seed_everything
 
     plans = episode_plans(args)
     run_meta = {
@@ -373,6 +374,7 @@ def run(args) -> int:
         clock = StepClock(twin.task, twin.step_dt())
         twin.reset_layout(random.Random(plan.layout_rng_seed))
         before = locations(twin)
+        seed_everything(f"eval/{plan.seed}")
         if args.executor == "expert":
             result = run_expert(twin, plan, clock)
         else:

@@ -23,6 +23,7 @@ Run headless with the RoboTwin conda python (no viewer window):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import shutil
@@ -262,13 +263,30 @@ def scene_state(twin, scene: st.Scene) -> tuple[set[str], set[str]]:
     return available, open_containers
 
 
+def seed_everything(text: str) -> None:
+    """Seed Python, NumPy and (if present) PyTorch from a string, before each episode."""
+    value = int.from_bytes(hashlib.sha256(text.encode()).digest()[:4], "big")
+    random.seed(value)
+    np.random.seed(value)
+    try:
+        import torch
+    except ImportError:
+        return
+    torch.manual_seed(value)
+
+
 def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[int, int]:
     """Procedural sorting scenes: rebuild per layout, several commands per layout."""
     bank = st.load_template_bank(args.templates)
     print(f"generated templates: {sum(len(v) for k in bank.values() for v in k.values())}")
     kept = attempted = 0
+    layout = -1
     while kept < args.episodes and attempted < args.episodes * 3:
-        scene = st.sample_scene(rng)
+        # Every layout and every command has its own generator derived from the seed, so a
+        # failed episode (which ends its layout) does not shift the episodes after it.
+        layout += 1
+        layout_rng = random.Random(f"{args.seed}/layout/{layout}")
+        scene = st.sample_scene(layout_rng)
         twin.custom_level = st.to_level(scene)
         print(
             f"Building sorting scene ({len(scene.objects)} objects, {len(scene.containers)} containers)...",
@@ -277,15 +295,17 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
         twin.setup()
         recorder = FrameRecorder(lambda: twin.record_frame(size), twin.step_dt(), fps)
         recorder.attach(twin.task)
-        spawns = twin.reset_layout(rng)
-        for _ in range(args.episodes_per_layout):
+        spawns = twin.reset_layout(layout_rng)
+        for step in range(args.episodes_per_layout):
             if kept >= args.episodes:
                 break
+            key = f"{layout}-{step}"
+            command_rng = random.Random(f"{args.seed}/layout/{layout}/command/{step}")
             available, open_containers = scene_state(twin, scene)
             command = st.make_command(
                 scene,
-                rng,
-                rng.choice(languages),
+                command_rng,
+                command_rng.choice(languages),
                 args.class_share,
                 available,
                 open_containers,
@@ -293,7 +313,8 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
             )
             if command is None:
                 break
-            obj = rng.choice(command.targets)
+            obj = command_rng.choice(command.targets)
+            seed_everything(f"{args.seed}/episode/{key}")
             attempted += 1
             recorder.start()
             outcome = twin.pick_and_place(obj, command.destination, echo=lambda _m: None)
@@ -332,6 +353,7 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
                 "summary": outcome.summary,
                 "fps": fps,
                 "seed": args.seed,
+                "episode_key": key,
                 "spawns": {k: list(v) for k, v in spawns.items()},
                 "image_size": list(size),
                 "source": "robotwin_twin_scripted_expert",
