@@ -1,10 +1,11 @@
 # Task specification
 
-- Version: 1.3
+- Version: 1.4
 - Status: frozen on 12 November 2026. Changes require a new version and a new dataset version.
 - 1.1 (12 November 2026, before any dataset was recorded): section 5.3 names the language-model template file.
 - 1.2 (12 November 2026, before any dataset was recorded): the held-out test commands are written and reviewed by the team instead of people outside it (section 5.3).
 - 1.3 (13 November 2026, after an 80-episode pilot recording of blocks only): household objects that differ by printed identity and semantic category enter the simulated task and the training data (sections 1, 2.2, 4, 5.1).
+- 1.4 (13 November 2026): a third family models the real 30-piece wooden kit, whose colours and shapes differ from the block set (sections 2.1, 4). The block set, its evaluation scenes and its test commands are unchanged.
 - Implementation: `tools/twin/sorting_task.py`
 
 ## 1. Sorting criteria
@@ -32,6 +33,23 @@ A vision-language-action policy sees only RGB images, so mass, hardness and inte
 | Size | small, large |
 
 This gives 32 object types. Simulated dimensions (`OBJECT_DIMS` in `sorting_task.py`) keep every object within the gripper opening: small objects about 3 cm across, large objects 4–5 cm. The real set is a commercial wooden building-block kit; its shapes and colours must be checked against this table on delivery, and any block outside it is excluded.
+
+### 2.1.1 Real kit
+
+The real arm sorts pieces of a commercial 30-piece wooden kit sold for shape and colour recognition. Its pieces do not cover the block set of section 2.1: cubes and cylinders are unpainted, the painted pieces come in six colours, and cuboids and triangular prisms come in two sizes. The simulation therefore has a separate family that contains only the kit's combinations:
+
+| Shape | Size | Colours | Simulated size |
+|---|---|---|---|
+| cube | small | natural wood | 3 cm |
+| cylinder | small | natural wood | 3 cm diameter, 3 cm tall |
+| cuboid | small | red, orange, yellow, green, blue, purple | 3 × 1.5 × 3 cm, standing |
+| cuboid | large | green, natural wood | 9 × 3 × 1.5 cm bar, lying |
+| triangular prism | small | red, orange, yellow, green, blue, purple | 3 cm sides, 3 cm long |
+| triangular prism | large | natural wood | 5 cm sides, 3 cm long |
+
+Sizes are estimated from product photos and are replaced by measured values when the kit arrives. The kit also holds half-cylinders and arches; they are not simulated and are left out of sorting runs. Colour words: natural wood ("gỗ mộc"), orange ("cam"), purple ("tím").
+
+The block set stays the main simulated family: it varies shape, colour and size independently, which the kit cannot, and its evaluation scenes and test commands are fixed.
 
 ### 2.2 Extension set: household objects
 
@@ -62,7 +80,7 @@ Containers stand in a row in front of the robot: left and right for two containe
 
 ## 4. Scenes
 
-A scene holds objects of one family: blocks (section 2.1) or household items (section 2.2). Household scenes always contain at least one look-alike pair, so the object's identity, not only its category, decides which object a command means. When recording training data, 30% of the layouts are household scenes (`--household-share`).
+A scene holds objects of one family: blocks (section 2.1), real-kit pieces (section 2.1.1) or household items (section 2.2). Household scenes always contain at least one look-alike pair, so the object's identity, not only its category, decides which object a command means. When recording training data, 40% of the layouts hold blocks, 30% real-kit pieces (`--kit-share`) and 30% household items (`--household-share`).
 
 
 - 2 to 4 objects with distinct (shape, colour, size) triples.

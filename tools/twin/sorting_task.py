@@ -52,7 +52,28 @@ HOUSEHOLD_CATEGORIES = {
     "numbered box": ("numbered box", "hộp có in số"),
     "bottle": ("bottle", "chai nước"),
 }
-FAMILIES = ("blocks", "household")
+FAMILIES = ("blocks", "kit", "household")
+
+# Real-kit family (task specification 1.4): the pieces of the commercial 30-piece wooden kit
+# bought for the real arm. Unlike "blocks", only the (shape, size, colour) combinations that
+# exist in the kit occur. Sizes are estimated from product photos and are corrected once the
+# kit is measured.
+KIT_COLOURS = ("red", "orange", "yellow", "green", "blue", "purple")
+KIT_CATALOGUE = tuple(
+    [("cube", "small", "natural"), ("cylinder", "small", "natural")]
+    + [("cuboid", "small", c) for c in KIT_COLOURS]
+    + [("cuboid", "large", c) for c in ("green", "natural")]
+    + [("triangular prism", "small", c) for c in KIT_COLOURS]
+    + [("triangular prism", "large", "natural")]
+)
+KIT_DIMS = {  # half extents (m)
+    ("cube", "small"): (0.015, 0.015, 0.015),
+    ("cylinder", "small"): (0.015, 0.015, 0.015),
+    ("cuboid", "small"): (0.015, 0.0075, 0.015),  # 3 x 1.5 x 3 cm, standing
+    ("cuboid", "large"): (0.045, 0.015, 0.0075),  # 9 x 3 x 1.5 cm bar, lying
+    ("triangular prism", "small"): (0.0173, 0.0173, 0.015),  # 3 cm sides
+    ("triangular prism", "large"): (0.0289, 0.0289, 0.015),  # 5 cm sides
+}
 HOUSEHOLD_MASS = {
     "fresh milk carton": 0.10,
     "soy milk carton": 0.10,
@@ -62,6 +83,7 @@ HOUSEHOLD_MASS = {
     "soft drink bottle": 0.12,
 }
 HOUSEHOLD_CRITERIA = ("category", "item")
+EN_COLOUR = {"natural": "natural wood"}
 CRITERIA = ("colour", "shape", "size")
 
 RGB = {
@@ -73,6 +95,9 @@ RGB = {
     "grey": (0.55, 0.55, 0.60),
     "black": (0.08, 0.08, 0.08),
     "brown": (0.55, 0.35, 0.20),
+    "orange": (0.95, 0.45, 0.10),
+    "purple": (0.45, 0.20, 0.60),
+    "natural": (0.85, 0.72, 0.55),
 }
 
 # Object geometry (metres): half extents chosen to fit the two-finger gripper.
@@ -133,6 +158,9 @@ VI_WORDS = {
     "grey": "xám",
     "black": "đen",
     "brown": "nâu",
+    "orange": "cam",
+    "purple": "tím",
+    "natural": "gỗ mộc",
     "small": "nhỏ",
     "large": "lớn",
     "square": "vuông",
@@ -156,10 +184,7 @@ class SceneObject:
     yaw: float
     item: str = ""  # household items only: the key in HOUSEHOLD_ITEMS
     category: str = ""
-
-    @property
-    def family(self) -> str:
-        return "household" if self.item else "blocks"
+    family: str = "blocks"
 
     def attribute(self, criterion: str) -> str:
         return {
@@ -270,8 +295,24 @@ def sample_scene(
                 rng.uniform(-math.pi, math.pi),
                 item=item,
                 category=HOUSEHOLD_ITEMS[item][0],
+                family="household",
             )
             for item, xy in zip(items, positions, strict=True)
+        )
+    elif family == "kit":
+        pieces = rng.sample(KIT_CATALOGUE, count)
+        positions = _sample_positions(rng, count)
+        objects = tuple(
+            SceneObject(
+                object_name(shape, colour, size),
+                shape,
+                colour,
+                size,
+                xy,
+                rng.uniform(-math.pi, math.pi),
+                family="kit",
+            )
+            for (shape, size, colour), xy in zip(pieces, positions, strict=True)
         )
     elif family == "blocks":
         triples = rng.sample(list(itertools.product(SHAPES, COLOURS, SIZES)), count)
@@ -374,7 +415,8 @@ def describe_object(reference: tuple[tuple[str, str], ...], language: str, defin
         phrase = " ".join(words)
         return phrase if definite else f"một {phrase}"
     noun = shape or "object"
-    words = [w for w in (attrs.get("size"), attrs.get("colour"), noun) if w]
+    colour = EN_COLOUR.get(attrs.get("colour", ""), attrs.get("colour"))
+    words = [w for w in (attrs.get("size"), colour, noun) if w]
     phrase = " ".join(words)
     if definite:
         return f"the {phrase}"
@@ -492,7 +534,8 @@ def to_level(scene: Scene, number: int = 0) -> ts.Level:
         if o.item:
             objects.append(household_spec(o.item))
             continue
-        hx, hy, hz = OBJECT_DIMS[(o.shape, o.size)]
+        dims = KIT_DIMS if o.family == "kit" else OBJECT_DIMS
+        hx, hy, hz = dims[(o.shape, o.size)]
         rgb = RGB[o.colour]
         if o.shape == "cube":
             spec = ts.ObjectSpec(o.name, "cube", o.colour, rgb, hx, hz)
