@@ -23,9 +23,7 @@ def _differentiate(
 
     derivatives: list[tuple[float, ...]] = []
     derivative_times: list[float] = []
-    for left, right, t0, t1 in zip(
-        samples[:-1], samples[1:], times[:-1], times[1:], strict=True
-    ):
+    for left, right, t0, t1 in zip(samples[:-1], samples[1:], times[:-1], times[1:], strict=True):
         dt = t1 - t0
         derivatives.append(
             tuple((r_value - l_value) / dt for l_value, r_value in zip(left, right, strict=True))
@@ -237,7 +235,6 @@ class JointLimitSafetyValidator:
                     ),
                 )
             )
-
 
         revision_violations = _revision_violations(
             scene_revision=trajectory.scene_revision,

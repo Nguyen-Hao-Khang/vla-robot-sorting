@@ -1,0 +1,35 @@
+{
+  "_comment": "Safety-layer profiles (src/vla_robot_sorting/safety/action_filter.py, ADR 0004). Base frame of the Panthera-HT: z up, z = 0 at the mounting surface. Joint limits from panthera_6dof.urdf. The simulation profile admits the scripted expert's motion (velocity <= 1.41 rad/s, acceleration p99 <= 2.3 rad/s^2, tool point inside the box, measured on panthera_twin_v1); the real profile starts slower and is revisited after the first low-speed tests.",
+  "simulation": {
+    "lower": [-2.4, 0.0, 0.0, -1.6, -1.7, -2.5],
+    "upper": [2.4, 3.2, 4.0, 1.6, 1.7, 2.5],
+    "margin": 0.05,
+    "clamp_tolerance": 0.1,
+    "max_velocity": 1.5,
+    "max_acceleration": 7.0,
+    "reject_step": 0.35,
+    "control_dt": 0.0666667,
+    "workspace_min": [0.20, -0.32, 0.0],
+    "workspace_max": [0.65, 0.32, 0.40],
+    "min_link_z": 0.05,
+    "gripper_range": [0.0, 1.0],
+    "watchdog_timeout_s": 2.0,
+    "max_consecutive_rejections": 5
+  },
+  "real": {
+    "lower": [-2.4, 0.0, 0.0, -1.6, -1.7, -2.5],
+    "upper": [2.4, 3.2, 4.0, 1.6, 1.7, 2.5],
+    "margin": 0.05,
+    "clamp_tolerance": 0.1,
+    "max_velocity": 0.5,
+    "max_acceleration": 2.0,
+    "reject_step": 0.2,
+    "control_dt": 0.0666667,
+    "workspace_min": [0.20, -0.30, 0.01],
+    "workspace_max": [0.60, 0.30, 0.35],
+    "min_link_z": 0.08,
+    "gripper_range": [0.0, 1.0],
+    "watchdog_timeout_s": 0.5,
+    "max_consecutive_rejections": 3
+  }
+}
