@@ -36,6 +36,7 @@ import twin_eval as te  # noqa: E402
 COLUMNS = (
     "Timestamp",
     "Scene seed",
+    "Family",
     "Language",
     "Command kind",
     "Scene",
@@ -70,7 +71,8 @@ STYLES = {
 }
 SYSTEM = (
     "You write realistic instructions that different people would give to a robot arm that "
-    "sorts toy blocks into containers on a table. Answer with JSON only."
+    "sorts objects (toy blocks or small drink packages and boxes) into containers on a table. "
+    "Answer with JSON only."
 )
 SCHEMA = {
     "type": "object",
@@ -98,13 +100,13 @@ def scene_text(scene: st.Scene) -> str:
     return f"Objects: {objects}. Containers: {containers}."
 
 
-def draft_items(seed: int, count: int, class_share: float) -> list[dict]:
+def draft_items(seed: int, count: int, class_share: float, family: str = "blocks") -> list[dict]:
     """One item per episode; languages alternate so both get the same number of rows."""
     rng = random.Random(f"{seed}/styles")
     items = []
     for index in range(count):
         language = ("vi", "en")[index % 2]
-        plan = te.plan_episode(te.episode_seed(seed, index), language, class_share, {}, 0.0)
+        plan = te.plan_episode(te.episode_seed(seed, index), language, class_share, {}, 0.0, family)
         command = plan.command
         dest = plan.scene.container(command.destination)
         definite = command.kind == "object"
@@ -112,6 +114,7 @@ def draft_items(seed: int, count: int, class_share: float) -> list[dict]:
             {
                 "id": index,
                 "seed": plan.seed,
+                "family": family,
                 "language": language,
                 "kind": command.kind,
                 "scene": scene_text(plan.scene),
@@ -211,6 +214,7 @@ def write_csv(path: Path, items: list[dict], drafts: dict[int, str]) -> None:
                 [
                     stamp,
                     item["seed"],
+                    item["family"],
                     item["language"],
                     item["kind"],
                     item["scene"],
@@ -229,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=9, help="evaluation run seed (held out)")
     parser.add_argument("--count", type=int, default=160)
     parser.add_argument("--class-share", type=float, default=0.3)
+    parser.add_argument("--family", choices=("blocks", "household"), default="blocks")
     parser.add_argument("--batch", type=int, default=10)
     parser.add_argument("--out", type=Path, default=ROOT / "configs" / "test_commands_v1.csv")
     parser.add_argument(
@@ -236,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--dry-run", action="store_true", help="print the first prompt and exit")
     args = parser.parse_args(argv)
-    items = draft_items(args.seed, args.count, args.class_share)
+    items = draft_items(args.seed, args.count, args.class_share, args.family)
     if args.dry_run:
         print(build_prompt(items[: args.batch]))
         return 0
