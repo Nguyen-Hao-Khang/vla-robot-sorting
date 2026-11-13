@@ -7,7 +7,7 @@ Period: 10 November to 31 December 2026. Each work item maps to one GitHub issue
 | Level | Content |
 |---|---|
 | Required | A fine-tuned small VLA that sorts objects by colour and shape from Vietnamese and English commands, in RoboTwin and on the real Panthera-HT behind the safety layer. Quantitative evaluation with at least 30 episodes per condition. Course report. |
-| Extension | Sorting by semantic category in simulation. |
+| Extension | Sorting by printed identity and semantic category (household items), in the simulated dataset from version 1; on the real arm if time permits. |
 | Out of scope | A planner model in front of the VLA; deformable or stacked objects; multi-step commands. |
 
 ## 2. Phases
@@ -81,10 +81,10 @@ At each checkpoint the team checks the condition. If it fails, the fallback appl
 | 4.2 | Evaluation | E3: real robot | Evaluation sheets, videos, tables | ≥ 30 episodes per condition with intervals | 3.5, 4.1 | 11 Dec | 18 Dec |
 | 4.3 | Evaluation | Failure analysis, figures and tables | Scripts and generated outputs | Every reported number traces to a log | 2.4, 2.5, 4.2 | 15 Dec | 20 Dec |
 | 4.4 | Robot | Demo video | Video ≤ 3 min | Published with the release | 4.2 | 15 Dec | 20 Dec |
-| 4.5 | Model | Extension: semantic categories | Dataset, checkpoint, table | ≥ 30 simulated episodes | 2.4 | 8 Dec | 20 Dec |
+| 4.5 | Model | Extension: household items on the real arm | Real demonstrations, table | ≥ 30 real episodes | 2.4, 3.4 | 8 Dec | 20 Dec |
 | 4.6 | Report | Chapter 4: method | Draft | Compiles, all sections present | 2.2, 3.5 | 1 Dec | 14 Dec |
 
-Item 4.5 starts only if phase 2 finishes on time.
+Household items are part of the simulated dataset and the E1 evaluation (task specification 1.3). Item 4.5 extends them to the real arm and starts only if phase 2 finishes on time.
 
 ### Phase 5. Write-up and release
 

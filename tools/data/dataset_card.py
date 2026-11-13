@@ -40,6 +40,13 @@ def destination_attributes(meta: dict) -> dict:
     return {}
 
 
+def picked(meta: dict) -> str:
+    """Shape of a picked block, or the item name of a picked household object."""
+    if meta.get("family") == "household":
+        return meta.get("object", "?")
+    return meta.get("object", "? ? ?").split(" ", 2)[-1]
+
+
 def statistics_of(metas: list[dict]) -> dict:
     ok = [m for m in metas if m.get("success")]
     frames = [m.get("frames", 0) for m in ok]
@@ -69,7 +76,8 @@ def statistics_of(metas: list[dict]) -> dict:
         ),
         "destination_outline": dict(Counter(d.get("outline", "?") for d in dests)),
         "destination_depth": dict(Counter(d.get("depth", "?") for d in dests)),
-        "picked_shape": dict(Counter(m.get("object", "? ? ?").split(" ", 2)[-1] for m in ok)),
+        "family": dict(Counter(m.get("family", "blocks") for m in ok)),
+        "picked_object": dict(Counter(picked(m) for m in ok).most_common()),
         "distinct_commands": len({m.get("task") for m in ok}),
         "seeds": sorted({m.get("seed") for m in ok if m.get("seed") is not None}),
     }
@@ -119,7 +127,9 @@ def card(name: str, stats: dict, source_commit: str) -> str:
         "",
         _table(stats["destination_depth"], "Destination depth"),
         "",
-        _table(stats["picked_shape"], "Picked shape"),
+        _table(stats["family"], "Object family"),
+        "",
+        _table(stats["picked_object"], "Picked object (shape or item)"),
         "",
         "## Intended use",
         "",

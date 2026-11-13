@@ -286,7 +286,9 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
         # failed episode (which ends its layout) does not shift the episodes after it.
         layout += 1
         layout_rng = random.Random(f"{args.seed}/layout/{layout}")
-        scene = st.sample_scene(layout_rng)
+        family_rng = random.Random(f"{args.seed}/family/{layout}")
+        family = "household" if family_rng.random() < args.household_share else "blocks"
+        scene = st.sample_scene(layout_rng, family=family)
         twin.custom_level = st.to_level(scene)
         print(
             f"Building sorting scene ({len(scene.objects)} objects, {len(scene.containers)} containers)...",
@@ -328,6 +330,7 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
                 "task": command.text,
                 "language": command.language,
                 "command_kind": command.kind,
+                "family": scene.family,
                 "object_reference": dict(command.object_reference),
                 "container_reference": list(command.container_reference),
                 "targets": list(command.targets),
@@ -335,7 +338,14 @@ def record_sorting(twin, args, rng, languages, size, fps, save, index) -> tuple[
                 "destination": command.destination,
                 "scene": {
                     "objects": [
-                        {"name": o.name, "shape": o.shape, "colour": o.colour, "size": o.size}
+                        {
+                            "name": o.name,
+                            "shape": o.shape,
+                            "colour": o.colour,
+                            "size": o.size,
+                            "item": o.item,
+                            "category": o.category,
+                        }
                         for o in scene.objects
                     ],
                     "containers": [
@@ -393,6 +403,12 @@ def main(argv: list[str] | None = None) -> int:
         choices=("sorting", "levels"),
         default="sorting",
         help="sorting: procedural scenes from docs/task-spec.md; levels: the fixed scene levels",
+    )
+    parser.add_argument(
+        "--household-share",
+        type=float,
+        default=0.3,
+        help="sorting task: fraction of layouts with household items instead of blocks",
     )
     parser.add_argument(
         "--class-share",

@@ -4,7 +4,7 @@
 Every object gets an OBJ mesh with UV coordinates plus PNG textures drawn with OpenCV:
   carton  - brick-shaped drink cartons (fresh milk / soy milk) and cardboard boxes printed "1"/"2"
   sphere  - tennis ball (yellow-green with a white seam) and mini volleyball (coloured panels)
-  bottle  - lathe-shaped PET bottles (water / orange juice) with a label band, neck and cap
+  bottle  - lathe-shaped PET bottles (water / orange juice / soft drink) with a label band, neck and cap
 All designs are generic (no real brands). Meshes are written in the object frame used by
 twin_scene: origin at mid-height on the vertical axis, +z up. Files are cached per design;
 the generator only needs numpy + OpenCV (both present in the RoboTwin env).
@@ -190,17 +190,17 @@ def bottle_texture(
     def row(z: float) -> int:
         return round((z1 - z) / (z1 - z0) * (h - 1))
 
-    water = design == "water"
-    body = (190, 225, 245) if water else (245, 150, 30)
-    cap = (40, 110, 220) if water else (210, 40, 40)
-    label = (255, 255, 255) if water else (255, 230, 120)
-    text_color = (30, 90, 200) if water else (200, 60, 10)
+    palette = {  # body, cap, label band, label text, title
+        "water": ((190, 225, 245), (40, 110, 220), (255, 255, 255), (30, 90, 200), "PURE WATER"),
+        "juice": ((245, 150, 30), (210, 40, 40), (255, 230, 120), (200, 60, 10), "ORANGE JUICE"),
+        "soda": ((90, 40, 20), (200, 30, 30), (200, 30, 30), (255, 255, 255), "SOFT DRINK"),
+    }
+    body, cap, label, text_color, title = palette[design]
     img = _canvas(w, h, body)
     cap_bottom = row(profile[-3][1])
     img[:cap_bottom] = cap
     lz0, lz1 = z0 + 0.25 * (z1 - z0), z0 + 0.55 * (z1 - z0)
     cv2.rectangle(img, (0, row(lz1)), (w, row(lz0)), label, -1)
-    title = "PURE WATER" if water else "ORANGE JUICE"
     for k in range(2):  # twice around the bottle
         _fit_text(
             img,

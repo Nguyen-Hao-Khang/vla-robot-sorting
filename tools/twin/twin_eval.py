@@ -62,9 +62,10 @@ def plan_episode(
     class_share: float,
     bank: dict | None,
     bank_share: float,
+    family: str = "blocks",
 ) -> EpisodePlan:
     """Scene, command and expert target for one episode; independent of the language."""
-    scene = st.sample_scene(random.Random(seed))
+    scene = st.sample_scene(random.Random(seed), family=family)
     command_rng = random.Random(f"{seed}/command")
     command = st.make_command(
         scene, command_rng, language, class_share, bank=bank, bank_share=bank_share
@@ -111,7 +112,10 @@ def load_human_plans(
             text = row["Command"].strip()
             if not text:
                 continue
-            plan = plan_episode(int(row["Scene seed"]), row["Language"], class_share, {}, 0.0)
+            family = row.get("Family") or "blocks"
+            plan = plan_episode(
+                int(row["Scene seed"]), row["Language"], class_share, {}, 0.0, family
+            )
             targets = tuple(t.strip() for t in row["Allowed objects"].split("|"))
             command = plan.command
             if (
@@ -136,7 +140,14 @@ def episode_plans(args) -> list[EpisodePlan]:
         return load_human_plans(args.human_commands, args.class_share, not args.allow_unreviewed)
     bank, bank_share = load_bank(args.command_source, args.templates)
     return [
-        plan_episode(episode_seed(args.seed, i), args.language, args.class_share, bank, bank_share)
+        plan_episode(
+            episode_seed(args.seed, i),
+            args.language,
+            args.class_share,
+            bank,
+            bank_share,
+            args.family,
+        )
         for i in range(args.episodes)
     ]
 
@@ -320,6 +331,7 @@ def episode_record(run: dict, index: int, plan: EpisodePlan, before, after, resu
         "seed": plan.seed,
         "language": command.language,
         "command_kind": command.kind,
+        "family": plan.scene.family,
         "criterion": command_criterion(command),
         "text": command.text,
         "targets": list(command.targets),
@@ -430,6 +442,7 @@ def main(argv: list[str] | None = None) -> int:
         help="command language (the human source takes it from each row)",
     )
     r.add_argument("--class-share", type=float, default=0.3)
+    r.add_argument("--family", choices=st.FAMILIES, default="blocks", help="object family")
     r.add_argument("--command-source", choices=COMMAND_SOURCES, default="builtin")
     r.add_argument("--templates", type=Path, default=ROOT / "configs" / "command_templates.json")
     r.add_argument(

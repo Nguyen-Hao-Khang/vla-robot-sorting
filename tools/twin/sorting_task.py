@@ -25,7 +25,7 @@ import itertools
 import json
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import twin_scene as ts
@@ -36,6 +36,32 @@ SIZES = ("small", "large")
 CONTAINER_COLOURS = ("white", "grey", "black", "brown")
 OUTLINES = ("square", "rectangle", "round")
 DEPTHS = ("shallow", "deep")
+
+# Household extension (task specification 1.3): printed packages that differ by identity and
+# fall into semantic categories. Each item: (category, English name, Vietnamese name).
+HOUSEHOLD_ITEMS = {
+    "fresh milk carton": ("milk carton", "fresh milk carton", "hộp sữa tươi"),
+    "soy milk carton": ("milk carton", "soy milk carton", "hộp sữa đậu nành"),
+    "box 1": ("numbered box", "box number 1", "hộp số 1"),
+    "box 2": ("numbered box", "box number 2", "hộp số 2"),
+    "water bottle": ("bottle", "water bottle", "chai nước suối"),
+    "soft drink bottle": ("bottle", "soft drink bottle", "chai nước ngọt"),
+}
+HOUSEHOLD_CATEGORIES = {
+    "milk carton": ("milk carton", "hộp sữa"),
+    "numbered box": ("numbered box", "hộp có in số"),
+    "bottle": ("bottle", "chai nước"),
+}
+FAMILIES = ("blocks", "household")
+HOUSEHOLD_MASS = {
+    "fresh milk carton": 0.10,
+    "soy milk carton": 0.10,
+    "box 1": 0.05,
+    "box 2": 0.05,
+    "water bottle": 0.12,
+    "soft drink bottle": 0.12,
+}
+HOUSEHOLD_CRITERIA = ("category", "item")
 CRITERIA = ("colour", "shape", "size")
 
 RGB = {
@@ -128,9 +154,21 @@ class SceneObject:
     size: str
     xy: tuple[float, float]
     yaw: float
+    item: str = ""  # household items only: the key in HOUSEHOLD_ITEMS
+    category: str = ""
+
+    @property
+    def family(self) -> str:
+        return "household" if self.item else "blocks"
 
     def attribute(self, criterion: str) -> str:
-        return {"colour": self.colour, "shape": self.shape, "size": self.size}[criterion]
+        return {
+            "colour": self.colour,
+            "shape": self.shape,
+            "size": self.size,
+            "item": self.item,
+            "category": self.category,
+        }[criterion]
 
 
 @dataclass(frozen=True)
@@ -153,6 +191,20 @@ class Scene:
 
     def object(self, name: str) -> SceneObject:
         return next(o for o in self.objects if o.name == name)
+
+    @property
+    def family(self) -> str:
+        return self.objects[0].family
+
+    @property
+    def criteria(self) -> tuple[str, ...]:
+        """Attributes that object references may use in this scene."""
+        return HOUSEHOLD_CRITERIA if self.family == "household" else CRITERIA
+
+    @property
+    def class_criteria(self) -> tuple[str, ...]:
+        """Criteria that class commands may sort by in this scene."""
+        return ("category",) if self.family == "household" else CRITERIA
 
 
 @dataclass(frozen=True)
@@ -191,22 +243,52 @@ def sample_scene(
     rng: random.Random,
     n_objects: tuple[int, int] = (2, 4),
     n_containers: tuple[int, int] = (2, 3),
+    family: str = "blocks",
 ) -> Scene:
-    """Random scene: unique object attribute triples, containers that differ pairwise."""
+    """Random scene: unique objects, containers that differ pairwise.
+
+    ``blocks`` draws (shape, colour, size) triples; ``household`` draws distinct printed
+    packages from HOUSEHOLD_ITEMS. Both use the same placement and container rules.
+    """
     count = rng.randint(*n_objects)
-    triples = rng.sample(list(itertools.product(SHAPES, COLOURS, SIZES)), count)
-    positions = _sample_positions(rng, count)
-    objects = tuple(
-        SceneObject(
-            object_name(shape, colour, size),
-            shape,
-            colour,
-            size,
-            xy,
-            rng.uniform(-math.pi, math.pi),
+    if family == "household":
+        # At least one look-alike pair (both items of a category), so that identity, not
+        # just category, decides which object a command means.
+        pair_category = rng.choice(sorted(HOUSEHOLD_CATEGORIES))
+        pair = sorted(i for i, v in HOUSEHOLD_ITEMS.items() if v[0] == pair_category)
+        rest = sorted(i for i in HOUSEHOLD_ITEMS if i not in pair)
+        items = pair + rng.sample(rest, count - len(pair))
+        rng.shuffle(items)
+        positions = _sample_positions(rng, count)
+        objects = tuple(
+            SceneObject(
+                item,
+                HOUSEHOLD_ITEMS[item][0],
+                "",
+                "",
+                xy,
+                rng.uniform(-math.pi, math.pi),
+                item=item,
+                category=HOUSEHOLD_ITEMS[item][0],
+            )
+            for item, xy in zip(items, positions, strict=True)
         )
-        for (shape, colour, size), xy in zip(triples, positions, strict=True)
-    )
+    elif family == "blocks":
+        triples = rng.sample(list(itertools.product(SHAPES, COLOURS, SIZES)), count)
+        positions = _sample_positions(rng, count)
+        objects = tuple(
+            SceneObject(
+                object_name(shape, colour, size),
+                shape,
+                colour,
+                size,
+                xy,
+                rng.uniform(-math.pi, math.pi),
+            )
+            for (shape, colour, size), xy in zip(triples, positions, strict=True)
+        )
+    else:
+        raise ValueError(f"unknown object family {family!r}")
     k = rng.randint(*n_containers)
     while True:
         styles = [
@@ -240,8 +322,9 @@ def object_references(scene: Scene, name: str) -> list[tuple[tuple[str, str], ..
     target = scene.object(name)
     index = scene.objects.index(target)
     found: list[tuple[tuple[str, str], ...]] = []
-    for r in (1, 2, 3):
-        for subset in itertools.combinations(CRITERIA, r):
+    criteria = scene.criteria
+    for r in range(1, len(criteria) + 1):
+        for subset in itertools.combinations(criteria, r):
             if any(
                 set(prev_keys) <= set(subset) for prev_keys in ([k for k, _ in f] for f in found)
             ):
@@ -270,6 +353,16 @@ def class_members(scene: Scene, criterion: str, value: str) -> tuple[str, ...]:
 def describe_object(reference: tuple[tuple[str, str], ...], language: str, definite: bool) -> str:
     """Noun phrase for an object reference, e.g. 'the small red cube' / 'khối lập phương đỏ nhỏ'."""
     attrs = dict(reference)
+    if "item" in attrs or "category" in attrs:
+        if "item" in attrs:
+            en, vi = HOUSEHOLD_ITEMS[attrs["item"]][1:]
+        else:
+            en, vi = HOUSEHOLD_CATEGORIES[attrs["category"]]
+        if language == "vi":
+            return vi if definite else f"một {vi}"
+        if definite:
+            return f"the {en}"
+        return f"an {en}" if en[0] in "aeiou" else f"a {en}"
     shape = attrs.get("shape")
     if language == "vi":
         noun = VI_WORDS[shape] if shape else "vật"
@@ -334,7 +427,12 @@ def make_command(
     dest_phrase = describe_container(container_ref, dest, language)
     if rng.random() < class_share:
         options = sorted(
-            {(c, o.attribute(c)) for c in CRITERIA for o in scene.objects if o.name in on_table}
+            {
+                (c, o.attribute(c))
+                for c in scene.class_criteria
+                for o in scene.objects
+                if o.name in on_table
+            }
         )
         criterion, value = rng.choice(options)
         reference = ((criterion, value),)
@@ -368,10 +466,32 @@ def load_template_bank(path: Path) -> dict[str, dict[str, list[str]]]:
     return json.loads(path.read_text(encoding="utf-8")).get("templates", {})
 
 
+def household_spec(item: str) -> ts.ObjectSpec:
+    """Simulator object for a household item: the textured packages of scene levels 6 and 7,
+    plus a soft drink bottle that shares the water bottle's geometry."""
+    specs = {o.name: o for level in (ts.LEVELS[6], ts.LEVELS[7]) for o in level.objects}
+    if item == "soft drink bottle":
+        water = specs["water bottle"]
+        return replace(
+            water,
+            name=item,
+            color_name="dark brown",
+            rgb=(0.35, 0.15, 0.08),
+            aliases=("chai nước ngọt",),
+            kind="small soft drink bottle with a red cap",
+            visual=("bottle", "soda"),
+            keywords=("soft", "soda"),
+        )
+    return replace(specs[item], mass=HOUSEHOLD_MASS[item])
+
+
 def to_level(scene: Scene, number: int = 0) -> ts.Level:
     """Build a twin_scene.Level so the simulator can create this scene."""
     objects = []
     for o in scene.objects:
+        if o.item:
+            objects.append(household_spec(o.item))
+            continue
         hx, hy, hz = OBJECT_DIMS[(o.shape, o.size)]
         rgb = RGB[o.colour]
         if o.shape == "cube":

@@ -124,3 +124,11 @@ def test_look_alike_textures_differ() -> None:
 def test_unknown_designs_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
         ta.write_asset("teapot", "x", (0.1,), tmp_path)
+
+
+def test_soft_drink_bottle_differs_from_water() -> None:
+    pytest.importorskip("cv2")
+    profile = ta.bottle_profile(0.021, 0.065)
+    water = ta.bottle_texture("water", profile)
+    soda = ta.bottle_texture("soda", profile)
+    assert np.abs(water.astype(int) - soda.astype(int)).mean() > 40
