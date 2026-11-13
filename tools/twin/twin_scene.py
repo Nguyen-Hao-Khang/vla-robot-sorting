@@ -58,14 +58,14 @@ UPRIGHT_Q = (math.sqrt(0.5), 0.0, -math.sqrt(0.5), 0.0)
 @dataclass(frozen=True)
 class ObjectSpec:
     name: str
-    shape: str  # cube | box | cylinder | prism | sphere | tetrahedron | bottle
+    shape: str  # cube | box | cylinder | prism | sphere | tetrahedron | bottle | halfcyl
     color_name: str
     rgb: tuple[float, float, float]
     radius: (
         float  # half side (cube), radius (cylinder/sphere/bottle), circumradius (prism/tetra base)
     )
     half_height: float
-    half_extents: tuple[float, float, float] | None = None  # box only
+    half_extents: tuple[float, float, float] | None = None  # box; halfcyl: (r, thickness/2, r/2)
     aliases: tuple[str, ...] = ()
     kind: str = ""  # what the object is, e.g. "fresh milk carton" (shown to the planner)
     visual: tuple[str, str] | None = None  # (asset kind, design) for a textured mesh
@@ -79,6 +79,8 @@ class ObjectSpec:
             return math.hypot(self.half_extents[0], self.half_extents[1])
         if self.shape == "cube":
             return self.radius * math.sqrt(2)
+        if self.shape == "halfcyl":
+            return math.hypot(self.radius, halfcyl_thickness(self) / 2)
         return self.radius
 
     @property
@@ -88,6 +90,10 @@ class ObjectSpec:
             return 2 * max(self.half_extents[0], self.half_extents[1])
         if self.shape == "prism":
             return 1.5 * self.radius
+        if self.shape == "halfcyl":
+            return halfcyl_thickness(self)  # closed across the two half-disc faces
+        if self.shape == "bottle":
+            return 2 * bottle_cap_radius(self.radius)  # grasped by the neck and cap
         if self.shape == "tetrahedron":
             return self.radius * math.sqrt(3) / 2  # edge of the mid-height cross-section
         return 2 * self.radius
@@ -114,6 +120,9 @@ class ObjectSpec:
             text = f"{self.color_name} upright {self.shape}, {width:.1f} cm diameter, {height:.1f} cm tall"
         elif self.shape == "sphere":
             text = f"{self.color_name} ball, {width:.1f} cm diameter"
+        elif self.shape == "halfcyl":
+            thick = halfcyl_thickness(self) * cm
+            text = f"{self.color_name} half cylinder lying on its flat face, {width:.1f} cm across, {thick:.1f} cm thick"
         elif self.shape == "tetrahedron":
             edge = self.radius * math.sqrt(3) * cm
             text = f"{self.color_name} regular tetrahedron, {edge:.1f} cm edges"
@@ -271,6 +280,33 @@ CARTON_HALF = (0.0225, 0.019, 0.05)  # 180 ml drink carton: 4.5 x 3.8 x 10 cm
 BOX_HALF = (0.025, 0.025, 0.025)  # small cardboard box: 5 cm cube
 BALL_R = 0.024  # toy-size balls: a real tennis ball (6.7 cm) would not fit the gripper
 BOTTLE_R, BOTTLE_HALF_H = 0.021, 0.065  # small PET bottle: 4.2 cm wide, 13 cm tall
+# Real PET bottles are wider than the gripper opens (5.5-6.5 cm), so they are grasped by the
+# neck and cap, whose size hardly depends on the bottle: a 28 mm cap is about 3 cm across.
+BOTTLE_CAP_R = 0.015
+BOTTLE_NECK_R = 0.0125
+BOTTLE_CAP_H = 0.02
+
+
+def bottle_cap_radius(radius: float) -> float:
+    return min(0.616 * radius, BOTTLE_CAP_R)
+
+
+def bottle_neck_radius(radius: float) -> float:
+    return min(0.55 * radius, BOTTLE_NECK_R)
+
+
+def bottle_cap_height(half_height: float) -> float:
+    return min(0.14 * 2 * half_height, BOTTLE_CAP_H)
+
+
+def bottle_grasp_z(half_height: float) -> float:
+    """Grasp point (from the bottle centre) in the middle of the neck-and-cap cylinder."""
+    return (-half_height + 0.80 * 2 * half_height + half_height) / 2
+
+
+def halfcyl_thickness(obj: ObjectSpec) -> float:
+    return 2 * obj.half_extents[1] if obj.half_extents else obj.radius
+
 
 LEVELS: dict[int, Level] = {
     1: Level(
@@ -606,10 +642,8 @@ def vertical_half_extent(obj: ObjectSpec, q) -> float:
     if obj.shape == "box" and obj.half_extents:
         hx, hy, hz = obj.half_extents
         return abs(row[0]) * hx + abs(row[1]) * hy + abs(row[2]) * hz
-    if obj.shape in ("prism", "tetrahedron"):
-        verts = (prism_vertices if obj.shape == "prism" else tetra_vertices)(
-            obj.radius, obj.half_height
-        )
+    if obj.shape in ("prism", "tetrahedron", "halfcyl"):
+        verts = mesh_vertices(obj)
         heights = [row[0] * x + row[1] * y + row[2] * z for x, y, z in verts]
         return (max(heights) - min(heights)) / 2
     c = min(1.0, abs(row[2]))
@@ -838,6 +872,44 @@ def prism_vertices(radius: float, half_height: float) -> list[tuple[float, float
     return [(x, y, -half_height) for x, y in corners] + [(x, y, half_height) for x, y in corners]
 
 
+def halfcyl_vertices(
+    radius: float, half_thickness: float, segments: int = 12
+) -> list[tuple[float, float, float]]:
+    """Half cylinder lying on its flat face: half-disc profile in x-z, extruded along y.
+
+    Origin at the centre of the bounding box (the flat face is at z = -radius / 2).
+    """
+    arc = [
+        (radius * math.cos(math.pi * k / segments), radius * math.sin(math.pi * k / segments))
+        for k in range(segments + 1)
+    ]
+    front = [(x, -half_thickness, z - radius / 2) for x, z in arc]
+    back = [(x, half_thickness, z - radius / 2) for x, z in arc]
+    return front + back
+
+
+def halfcyl_faces(segments: int = 12) -> list[tuple[int, int, int]]:
+    n = segments + 1
+    faces = []
+    for k in range(1, segments):  # the two half-disc faces (fans)
+        faces.append((0, k, k + 1))
+        faces.append((n, n + k, n + k + 1))
+    for k in range(segments):  # curved side
+        faces.append((k, k + 1, n + k + 1))
+        faces.append((k, n + k + 1, n + k))
+    faces.append((0, segments, n + segments))  # flat bottom
+    faces.append((0, n + segments, n))
+    return faces
+
+
+def mesh_vertices(obj: ObjectSpec) -> list[tuple[float, float, float]]:
+    if obj.shape == "prism":
+        return prism_vertices(obj.radius, obj.half_height)
+    if obj.shape == "halfcyl":
+        return halfcyl_vertices(obj.radius, halfcyl_thickness(obj) / 2)
+    return tetra_vertices(obj.radius, obj.half_height)
+
+
 def tetra_vertices(radius: float, half_height: float) -> list[tuple[float, float, float]]:
     """Regular tetrahedron standing on a face; origin at mid-height on the vertical axis."""
     base = [
@@ -951,6 +1023,10 @@ def write_mesh_files(obj: ObjectSpec, cache_dir: Path) -> Path:
     (cache_dir / f"{stem}.mtl").write_text(f"newmtl {stem}\nKd {r:.3f} {g:.3f} {b:.3f}\n")
     if obj.shape == "prism":
         text = mesh_obj_text(prism_vertices(obj.radius, obj.half_height), PRISM_FACES, stem)
+    elif obj.shape == "halfcyl":
+        stem += f"_{round(halfcyl_thickness(obj) * 1000)}"
+        (cache_dir / f"{stem}.mtl").write_text(f"newmtl {stem}\nKd {r:.3f} {g:.3f} {b:.3f}\n")
+        text = mesh_obj_text(mesh_vertices(obj), halfcyl_faces(), stem)
     else:
         text = mesh_obj_text(tetra_vertices(obj.radius, obj.half_height), TETRA_FACES, stem)
     mesh = cache_dir / f"{stem}.obj"
@@ -959,11 +1035,14 @@ def write_mesh_files(obj: ObjectSpec, cache_dir: Path) -> Path:
 
 
 def bottle_collision(radius: float, half_height: float) -> list[tuple[float, float, float]]:
-    """(centre z, radius, half length) of the body, shoulder and neck+cap cylinders."""
+    """(centre z, radius, half length) of the body, shoulder and neck+cap cylinders.
+
+    The neck and cap are one cylinder as wide as the cap, from 80 % of the height to the top.
+    """
     H = 2 * half_height
     body = (-half_height + 0.36 * H, radius, 0.36 * H)
     shoulder = (-half_height + 0.76 * H, radius * 0.75, 0.04 * H)
-    neck = (-half_height + 0.90 * H, radius * 0.62, 0.10 * H)
+    neck = (bottle_grasp_z(half_height), bottle_cap_radius(radius), 0.10 * H)
     return [body, shoulder, neck]
 
 

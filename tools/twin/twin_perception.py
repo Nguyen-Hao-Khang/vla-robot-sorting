@@ -59,6 +59,7 @@ SHAPE_WORDS = {
     "sphere": ("ball", "sphere"),
     "prism": ("prism", "triangle", "triangular"),
     "tetrahedron": ("tetrahedron", "pyramid", "triangle", "triangular"),
+    "halfcyl": ("half cylinder", "half-cylinder", "semicircle", "semi-cylinder", "half"),
 }
 
 

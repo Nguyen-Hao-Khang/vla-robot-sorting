@@ -143,10 +143,7 @@ def support(obj: ts.ObjectSpec, q, direction) -> float:
     if obj.shape in ("cylinder", "bottle"):
         c = min(1.0, abs(local[2]))
         return float(c * obj.half_height + math.sqrt(max(0.0, 1 - c * c)) * obj.radius)
-    if obj.shape == "prism":
-        verts = np.asarray(ts.prism_vertices(obj.radius, obj.half_height))
-    else:
-        verts = np.asarray(ts.tetra_vertices(obj.radius, obj.half_height))
+    verts = np.asarray(ts.mesh_vertices(obj))
     return float(np.max(verts @ local))
 
 
@@ -239,8 +236,12 @@ def _candidates(obj: ts.ObjectSpec, rot: np.ndarray, upright_frac: float):
         cands = []
         if ca >= cos_max or (obj.shape == "cylinder" and -ca >= cos_max):
             n = ez if ca >= 0 else -ez  # end face up (a bottle is never held upside down)
-            offset = n * upright_frac * obj.half_height if not lying else np.zeros(3)
-            cands += _round(n, obj.radius, offset, up)
+            if obj.shape == "bottle":  # by the neck and cap: the body is wider than the gripper
+                offset = ez * ts.bottle_grasp_z(obj.half_height)
+                cands += _round(n, ts.bottle_cap_radius(obj.radius), offset, up)
+            else:
+                offset = n * upright_frac * obj.half_height if not lying else np.zeros(3)
+                cands += _round(n, obj.radius, offset, up)
         side = up - ca * ez
         if np.linalg.norm(side) > 1e-6:
             side /= np.linalg.norm(side)
@@ -266,6 +267,20 @@ def _candidates(obj: ts.ObjectSpec, rot: np.ndarray, upright_frac: float):
                 )
         if not cands:
             return "no face of it points up enough"
+        return up, up[2] < UPRIGHT_COS, cands
+    if obj.shape == "halfcyl":
+        thick = ts.halfcyl_thickness(obj)
+        cands = []
+        if up[2] >= UPRIGHT_COS:  # on its flat face: close on the two half-disc faces
+            cands.append(_Candidate(ez, np.eye(3)[1], thick, np.zeros(3), _tilt(ez, up)))
+            cands.append(
+                _Candidate(ez, np.eye(3)[0], 2 * obj.radius, np.zeros(3), _tilt(ez, up), True)
+            )
+        elif abs(up[1]) >= UPRIGHT_COS:  # standing on a half-disc face: across the flat face
+            n = np.eye(3)[1] * (1.0 if up[1] > 0 else -1.0)
+            cands.append(_Candidate(n, np.eye(3)[2], obj.radius, np.zeros(3), _tilt(n, up)))
+        if not cands:
+            return "it is resting on its curved side"
         return up, up[2] < UPRIGHT_COS, cands
     if obj.shape == "tetrahedron":
         verts = np.asarray(ts.tetra_vertices(obj.radius, obj.half_height))

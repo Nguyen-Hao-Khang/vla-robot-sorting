@@ -364,3 +364,20 @@ def test_vertical_extent_and_straight_descent() -> None:
     assert ts.descend_dz(bottle, TABLE + bottle.half_height, upright, ts.DEEP_BIN, TABLE) == 0.0
     assert ts.floor_top(ts.TABLE_SPOT, TABLE) == TABLE  # the table has no tray floor
     assert ts.safe_ee_z(TABLE, 0.10) == TABLE + 0.10 + ts.GRIPPER_REACH
+
+
+def test_half_cylinder_mesh_closed_outward_and_sized() -> None:
+    verts = ts.halfcyl_vertices(0.02, 0.015)
+    text = ts.mesh_obj_text(verts, ts.halfcyl_faces())
+    _check_closed_outward(np.array(verts), text, 2 * 12 + 2 * 12)
+    arr = np.array(verts)
+    assert np.allclose(arr.min(axis=0), (-0.02, -0.015, -0.01))
+    assert np.allclose(arr.max(axis=0), (0.02, 0.015, 0.01))
+
+
+def test_bottle_neck_and_cap_have_a_fixed_size() -> None:
+    small = ts.bottle_collision(ts.BOTTLE_R, ts.BOTTLE_HALF_H)
+    large = ts.bottle_collision(0.0325, 0.1025)
+    assert math.isclose(small[2][1], 0.616 * ts.BOTTLE_R)  # unchanged for the toy bottle
+    assert math.isclose(large[2][1], ts.BOTTLE_CAP_R)  # 3 cm cap on a 6.5 cm bottle
+    assert math.isclose(large[2][0] + large[2][2], 0.1025)  # neck cylinder ends at the top

@@ -53,11 +53,21 @@ HOUSEHOLD_CATEGORIES = {
     "bottle": ("bottle", "chai nước"),
 }
 FAMILIES = ("blocks", "kit", "household")
+# Bottles come in two sizes; real bottles are wider than the gripper opens, so they are
+# grasped by the neck and cap (twin_scene.BOTTLE_CAP_R). (radius, half height) in metres and
+# full-bottle mass in kg, estimated for 350 ml and 500 ml PET bottles; corrected once the
+# bought bottles are measured.
+BOTTLE_ITEMS = ("water bottle", "soft drink bottle")
+BOTTLE_SIZES = {"small": (0.029, 0.080), "large": (0.0325, 0.1025)}
+BOTTLE_MASS = {"small": 0.37, "large": 0.53}
+SIZE_PAIR_SHARE = 0.25  # household scenes with a bottle that get its other size as well
 
 # Real-kit family (task specification 1.4): the pieces of the commercial 30-piece wooden kit
-# bought for the real arm. Unlike "blocks", only the (shape, size, colour) combinations that
-# exist in the kit occur. Sizes are estimated from product photos and are corrected once the
-# kit is measured.
+# bought for the real arm: the shapes of the kit except the two arches. Colours: the kit paints
+# small cuboids blue, red, green or purple and small prisms and half cylinders orange or
+# yellow; the simulation offers every colour of KIT_COLOURS for these shapes (team decision,
+# more variety for training), while large pieces, cubes and cylinders keep the kit's colours.
+# Sizes are estimated from product photos and are corrected once the kit is measured.
 KIT_COLOURS = ("red", "orange", "yellow", "green", "blue", "purple")
 KIT_CATALOGUE = tuple(
     [("cube", "small", "natural"), ("cylinder", "small", "natural")]
@@ -65,24 +75,28 @@ KIT_CATALOGUE = tuple(
     + [("cuboid", "large", c) for c in ("green", "natural")]
     + [("triangular prism", "small", c) for c in KIT_COLOURS]
     + [("triangular prism", "large", "natural")]
+    + [("half cylinder", "small", c) for c in KIT_COLOURS]
 )
 KIT_DIMS = {  # half extents (m)
     ("cube", "small"): (0.015, 0.015, 0.015),
     ("cylinder", "small"): (0.015, 0.015, 0.015),
     ("cuboid", "small"): (0.015, 0.0075, 0.015),  # 3 x 1.5 x 3 cm, standing
-    ("cuboid", "large"): (0.045, 0.015, 0.0075),  # 9 x 3 x 1.5 cm bar, lying
-    ("triangular prism", "small"): (0.0173, 0.0173, 0.015),  # 3 cm sides
-    ("triangular prism", "large"): (0.0289, 0.0289, 0.015),  # 5 cm sides
+    ("cuboid", "large"): (0.030, 0.015, 0.0075),  # 6 x 3 x 1.5 cm bar, lying
+    # The kit's prisms are right-angled (base 4.2 / 6 cm) and lie on their base, so the real
+    # gripper closes on the triangular faces 3 cm apart. The simulator's prism is equilateral
+    # and stands on a triangular face (3 cm tall); the large one is cut to 5.2 cm sides so its
+    # side-face grasp (1.5 x circumradius = 4.5 cm) stays in the range that holds reliably.
+    ("triangular prism", "small"): (0.0242, 0.0242, 0.015),  # 4.2 cm sides
+    ("triangular prism", "large"): (0.0300, 0.0300, 0.015),  # 5.2 cm sides
+    ("half cylinder", "small"): (0.020, 0.015, 0.010),  # 4 cm across, 3 cm thick, 2 cm tall
 }
-HOUSEHOLD_MASS = {
-    "fresh milk carton": 0.10,
-    "soy milk carton": 0.10,
+HOUSEHOLD_MASS = {  # full packages (team decision: drinks are not emptied); bottles: BOTTLE_MASS
+    "fresh milk carton": 0.20,
+    "soy milk carton": 0.20,
     "box 1": 0.05,
     "box 2": 0.05,
-    "water bottle": 0.12,
-    "soft drink bottle": 0.12,
 }
-HOUSEHOLD_CRITERIA = ("category", "item")
+HOUSEHOLD_CRITERIA = ("category", "item", "size")
 EN_COLOUR = {"natural": "natural wood"}
 CRITERIA = ("colour", "shape", "size")
 
@@ -150,6 +164,7 @@ VI_WORDS = {
     "cuboid": "khối hộp chữ nhật",
     "cylinder": "khối trụ",
     "triangular prism": "khối lăng trụ tam giác",
+    "half cylinder": "khối bán trụ",
     "red": "đỏ",
     "yellow": "vàng",
     "green": "xanh lá",
@@ -285,19 +300,8 @@ def sample_scene(
         items = pair + rng.sample(rest, count - len(pair))
         rng.shuffle(items)
         positions = _sample_positions(rng, count)
-        objects = tuple(
-            SceneObject(
-                item,
-                HOUSEHOLD_ITEMS[item][0],
-                "",
-                "",
-                xy,
-                rng.uniform(-math.pi, math.pi),
-                item=item,
-                category=HOUSEHOLD_ITEMS[item][0],
-                family="household",
-            )
-            for item, xy in zip(items, positions, strict=True)
+        objects = _household_objects(
+            items, positions, [rng.uniform(-math.pi, math.pi) for _ in items], rng
         )
     elif family == "kit":
         pieces = rng.sample(KIT_CATALOGUE, count)
@@ -354,6 +358,51 @@ def sample_scene(
     return Scene(objects, containers)
 
 
+def _household_objects(
+    items: list[str], positions: list, yaws: list[float], rng: random.Random
+) -> tuple[SceneObject, ...]:
+    """Household scene objects; bottles get a size and sometimes their other size as well.
+
+    Sizes come from a separate generator seeded by ``rng``'s state, so the items, positions
+    and containers of a scene are the same as before bottle sizes existed (the reviewed
+    household test commands keep their scenes).
+    """
+    sizes = random.Random(repr(rng.getstate()))
+    objects = []
+    for item, xy, yaw in zip(items, positions, yaws, strict=True):
+        size = sizes.choice(sorted(BOTTLE_SIZES)) if item in BOTTLE_ITEMS else ""
+        objects.append(_household_object(item, size, xy, yaw, item))
+    bottles = [o for o in objects if o.size]
+    if bottles and len(objects) < 4 and sizes.random() < SIZE_PAIR_SHARE:
+        first = sizes.choice(bottles)
+        other = "large" if first.size == "small" else "small"
+        xy = _free_position(sizes, [o.xy for o in objects])
+        if xy is not None:
+            index = objects.index(first)
+            objects[index] = replace(first, name=f"{first.size} {first.item}")
+            twin = _household_object(
+                first.item, other, xy, sizes.uniform(-math.pi, math.pi), f"{other} {first.item}"
+            )
+            objects.append(twin)
+    return tuple(objects)
+
+
+def _household_object(item: str, size: str, xy, yaw: float, name: str) -> SceneObject:
+    category = HOUSEHOLD_ITEMS[item][0]
+    return SceneObject(
+        name, category, "", size, xy, yaw, item=item, category=category, family="household"
+    )
+
+
+def _free_position(rng: random.Random, taken: list) -> tuple[float, float] | None:
+    (x0, x1), (y0, y1) = OBJECT_AREA
+    for _ in range(200):
+        p = (rng.uniform(x0, x1), rng.uniform(y0, y1))
+        if all(math.dist(p, q) >= MIN_OBJECT_GAP for q in taken):
+            return p
+    return None
+
+
 def _unique(values: list[tuple[str, ...]], index: int) -> bool:
     return values.count(values[index]) == 1
 
@@ -370,6 +419,10 @@ def object_references(scene: Scene, name: str) -> list[tuple[tuple[str, str], ..
                 set(prev_keys) <= set(subset) for prev_keys in ([k for k, _ in f] for f in found)
             ):
                 continue
+            if any(target.attribute(c) == "" for c in subset):
+                continue  # e.g. "size" for a carton
+            if subset == ("size",) and scene.family == "household":
+                continue  # "the large one" alone does not name a household object
             values = [tuple(o.attribute(c) for c in subset) for o in scene.objects]
             if _unique(values, index):
                 found.append(tuple((c, target.attribute(c)) for c in subset))
@@ -399,6 +452,8 @@ def describe_object(reference: tuple[tuple[str, str], ...], language: str, defin
             en, vi = HOUSEHOLD_ITEMS[attrs["item"]][1:]
         else:
             en, vi = HOUSEHOLD_CATEGORIES[attrs["category"]]
+        if "size" in attrs:
+            en, vi = f"{attrs['size']} {en}", f"{vi} {VI_WORDS[attrs['size']]}"
         if language == "vi":
             return vi if definite else f"một {vi}"
         if definite:
@@ -508,9 +563,20 @@ def load_template_bank(path: Path) -> dict[str, dict[str, list[str]]]:
     return json.loads(path.read_text(encoding="utf-8")).get("templates", {})
 
 
-def household_spec(item: str) -> ts.ObjectSpec:
+def household_spec(item: str, size: str = "") -> ts.ObjectSpec:
     """Simulator object for a household item: the textured packages of scene levels 6 and 7,
-    plus a soft drink bottle that shares the water bottle's geometry."""
+    plus a soft drink bottle that shares the water bottle's geometry. Bottles take the radius,
+    height and mass of their size (BOTTLE_SIZES)."""
+    spec = _household_base(item)
+    if item in BOTTLE_ITEMS:
+        radius, half_height = BOTTLE_SIZES[size or "small"]
+        return replace(
+            spec, radius=radius, half_height=half_height, mass=BOTTLE_MASS[size or "small"]
+        )
+    return spec
+
+
+def _household_base(item: str) -> ts.ObjectSpec:
     specs = {o.name: o for level in (ts.LEVELS[6], ts.LEVELS[7]) for o in level.objects}
     if item == "soft drink bottle":
         water = specs["water bottle"]
@@ -524,7 +590,7 @@ def household_spec(item: str) -> ts.ObjectSpec:
             visual=("bottle", "soda"),
             keywords=("soft", "soda"),
         )
-    return replace(specs[item], mass=HOUSEHOLD_MASS[item])
+    return replace(specs[item], mass=HOUSEHOLD_MASS.get(item, specs[item].mass))
 
 
 def to_level(scene: Scene, number: int = 0) -> ts.Level:
@@ -532,7 +598,7 @@ def to_level(scene: Scene, number: int = 0) -> ts.Level:
     objects = []
     for o in scene.objects:
         if o.item:
-            objects.append(household_spec(o.item))
+            objects.append(replace(household_spec(o.item, o.size), name=o.name))
             continue
         dims = KIT_DIMS if o.family == "kit" else OBJECT_DIMS
         hx, hy, hz = dims[(o.shape, o.size)]
@@ -543,6 +609,10 @@ def to_level(scene: Scene, number: int = 0) -> ts.Level:
             spec = ts.ObjectSpec(o.name, "box", o.colour, rgb, hx, hz, half_extents=(hx, hy, hz))
         elif o.shape == "cylinder":
             spec = ts.ObjectSpec(o.name, "cylinder", o.colour, rgb, hx, hz)
+        elif o.shape == "half cylinder":
+            spec = ts.ObjectSpec(
+                o.name, "halfcyl", o.colour, rgb, hx, hz, half_extents=(hx, hy, hz)
+            )
         else:
             spec = ts.ObjectSpec(o.name, "prism", o.colour, rgb, hx, hz)
         objects.append(spec)

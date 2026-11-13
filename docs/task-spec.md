@@ -1,11 +1,12 @@
 # Task specification
 
-- Version: 1.4
+- Version: 1.5
 - Status: frozen on 12 November 2026. Changes require a new version and a new dataset version.
 - 1.1 (12 November 2026, before any dataset was recorded): section 5.3 names the language-model template file.
 - 1.2 (12 November 2026, before any dataset was recorded): the held-out test commands are written and reviewed by the team instead of people outside it (section 5.3).
 - 1.3 (13 November 2026, after an 80-episode pilot recording of blocks only): household objects that differ by printed identity and semantic category enter the simulated task and the training data (sections 1, 2.2, 4, 5.1).
 - 1.4 (13 November 2026): a third family models the real 30-piece wooden kit, whose colours and shapes differ from the block set (sections 2.1, 4). The block set, its evaluation scenes and its test commands are unchanged.
+- 1.5 (13 November 2026, before the first recording with the kit and household families): kit sizes corrected from a closer reading of the product photo and half cylinders added (section 2.1.1); household bottles come in two sizes, are grasped by the neck and cap, and all drink packages are simulated full (sections 2.2, 4). Six rows of the household test commands were re-derived for the changed scenes (section 5.3).
 - Implementation: `tools/twin/sorting_task.py`
 
 ## 1. Sorting criteria
@@ -36,18 +37,20 @@ This gives 32 object types. Simulated dimensions (`OBJECT_DIMS` in `sorting_task
 
 ### 2.1.1 Real kit
 
-The real arm sorts pieces of a commercial 30-piece wooden kit sold for shape and colour recognition. Its pieces do not cover the block set of section 2.1: cubes and cylinders are unpainted, the painted pieces come in six colours, and cuboids and triangular prisms come in two sizes. The simulation therefore has a separate family that contains only the kit's combinations:
+The real arm sorts pieces of a commercial 30-piece wooden kit sold for shape and colour recognition. Its pieces do not cover the block set of section 2.1: cubes, cylinders and large pieces are mostly unpainted, the painted pieces come in six colours, and cuboids and triangular prisms come in two sizes. Read from the product photo (30 pieces):
 
-| Shape | Size | Colours | Simulated size |
+| Shape | In the kit | Simulated colours | Simulated size |
 |---|---|---|---|
-| cube | small | natural wood | 3 cm |
-| cylinder | small | natural wood | 3 cm diameter, 3 cm tall |
-| cuboid | small | red, orange, yellow, green, blue, purple | 3 × 1.5 × 3 cm, standing |
-| cuboid | large | green, natural wood | 9 × 3 × 1.5 cm bar, lying |
-| triangular prism | small | red, orange, yellow, green, blue, purple | 3 cm sides, 3 cm long |
-| triangular prism | large | natural wood | 5 cm sides, 3 cm long |
+| cube, small | 4 natural wood | natural wood | 3 cm |
+| cylinder, small | 4 natural wood | natural wood | 3 cm diameter, 3 cm tall |
+| cuboid, small | 2 each blue, red, green, purple | red, orange, yellow, green, blue, purple | 3 × 1.5 × 3 cm, standing |
+| cuboid, large | 2 green, 2 natural wood | green, natural wood | 6 × 3 × 1.5 cm bar, lying |
+| triangular prism, small | 2 orange, 2 yellow | red, orange, yellow, green, blue, purple | 4.2 cm sides, 3 cm tall |
+| triangular prism, large | 2 natural wood | natural wood | 5.2 cm sides, 3 cm tall |
+| half cylinder, small | 1 orange, 1 yellow | red, orange, yellow, green, blue, purple | 4 cm across, 3 cm thick, 2 cm tall, on its flat face |
+| arch | 2 natural wood | not simulated | — |
 
-Sizes are estimated from product photos and are replaced by measured values when the kit arrives. The kit also holds half-cylinders and arches; they are not simulated and are left out of sorting runs. Colour words: natural wood ("gỗ mộc"), orange ("cam"), purple ("tím").
+Small cuboids, small prisms and half cylinders take all six colours in simulation, although the kit paints each of them in only two to four; the extra combinations add variety to the training data and never occur on the real table. The kit's prisms are right-angled and lie on their base, so the real gripper closes on the triangular faces 3 cm apart; the simulated prism is equilateral and stands on a triangular face, and the large one is cut to 5.2 cm sides so that its grasp width (4.5 cm) stays within the range the simulated gripper holds reliably. Arches (6 × 3 × 3 cm with a half-round cut-out) are hard to grasp from above and are left out of sorting runs. Sizes are estimates and are replaced by measured values when the kit arrives. Colour words: natural wood ("gỗ mộc"), orange ("cam"), purple ("tím"); half cylinder is "khối bán trụ".
 
 The block set stays the main simulated family: it varies shape, colour and size independently, which the kit cannot, and its evaluation scenes and test commands are fixed.
 
@@ -61,10 +64,12 @@ Six printed packages in three semantic categories. Each category holds a look-al
 | soy milk carton | milk carton | hộp sữa đậu nành | 4.5 × 3.8 × 10 cm |
 | box number 1 | numbered box | hộp số 1 | 5 cm cube |
 | box number 2 | numbered box | hộp số 2 | 5 cm cube |
-| water bottle | bottle | chai nước suối | 4.2 cm diameter, 13 cm tall |
-| soft drink bottle | bottle | chai nước ngọt | 4.2 cm diameter, 13 cm tall |
+| water bottle | bottle | chai nước suối | small: 5.8 cm diameter, 16 cm tall; large: 6.5 cm diameter, 20.5 cm tall |
+| soft drink bottle | bottle | chai nước ngọt | same two sizes |
 
-The simulated packages carry generic prints (no brands, `tools/twin/twin_assets.py`). Real counterparts, if bought, must be at most 4.5 cm wide where the gripper closes and at most 13 cm tall, and must keep the same look-alike pairs (two milk cartons of the same size, two boxes differing only by a printed number, two bottles of the same shape).
+Bottles are wider than the gripper opens (5.8 cm), so they are grasped from above by the neck and cap, which are about 3 cm across on every common bottle (`BOTTLE_CAP_R` in `twin_scene.py`). Each bottle in a scene is small or large; in a quarter of the scenes that hold a bottle, the same bottle also appears in its other size, so size alone decides which bottle a command means. Drink packages are full (team decision): 0.20 kg per carton, 0.37 kg per small and 0.53 kg per large bottle; the numbered boxes weigh 0.05 kg.
+
+The simulated packages carry generic prints (no brands, `tools/twin/twin_assets.py`). The real ones must keep the same look-alike pairs (two milk cartons of the same size, two boxes differing only by a printed number, two kinds of bottle in the same two sizes); cartons and boxes must be at most 4.5 cm wide where the gripper closes. Bottle sizes and masses are estimates for 350 ml and 500 ml bottles and are replaced by measured values when the bottles are bought.
 
 ## 3. Containers
 
@@ -100,7 +105,7 @@ A command contains one object reference and one container reference, in English 
 
 Object commands test grounding of a specific object. Class commands test sorting: repeating class commands until no member remains on the table sorts the scene under that criterion.
 
-In household scenes the same two forms apply with other attributes. Object commands name the item ("put the soy milk carton in the left tray") or, when it is the only one of its category, the category ("put the bottle in the deep bin"). Class commands name a category, and either item of the category is a correct pick ("put a milk carton in the round tray").
+In household scenes the same two forms apply with other attributes. Object commands name the item ("put the soy milk carton in the left tray") or, when it is the only one of its category, the category ("put the bottle in the deep bin"). When the same bottle stands there in both sizes, the size is added ("put the large water bottle in the deep bin", "chai nước suối lớn"). Class commands name a category, and either item of the category is a correct pick ("put a milk carton in the round tray").
 
 ### 5.2 Container references
 
@@ -113,6 +118,9 @@ The container is named by one attribute that is unique among the containers in t
 | Templates in `sorting_task.py` (4 object and 3 class templates per language) | Training data, baseline |
 | Language-model templates in `configs/command_templates.json` (about 40 per language and form) | Training data |
 | Held-out test commands in `configs/test_commands_v1.csv`: one free command per evaluation episode, drafted in varied styles and edited and approved row by row by the team; none reproduces a training template | Test set only |
+| Held-out household commands in `configs/test_commands_household_v1.csv` (60 rows, seed 10), made the same way | Test set only |
+
+Bottle sizes (version 1.5) are drawn from a separate random stream, so household scenes keep their items, positions and containers. Six of the 60 household scenes gained the other size of a bottle; their scene and allowed-object columns were re-derived. Five commands stayed correct as written; one (seed 1000005) now targets the small soft drink bottle, was reworded and waits for a new review.
 
 Examples generated from the templates:
 
