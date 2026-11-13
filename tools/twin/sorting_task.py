@@ -54,12 +54,15 @@ HOUSEHOLD_CATEGORIES = {
 }
 FAMILIES = ("blocks", "kit", "household")
 # Bottles come in two sizes; real bottles are wider than the gripper opens, so they are
-# grasped by the neck and cap (twin_scene.BOTTLE_CAP_R). (radius, half height) in metres and
-# full-bottle mass in kg, estimated for 350 ml and 500 ml PET bottles; corrected once the
-# bought bottles are measured.
+# grasped by the neck and cap (twin_scene.BOTTLE_CAP_R). (radius, half height) in metres,
+# estimated for 350 ml and 500 ml PET bottles and corrected once the bought bottles are measured.
+# BOTTLE_MASS is the simulated mass: with the full-bottle masses (BOTTLE_MASS_REAL) every expert
+# grasp by the cap slipped in RoboTwin (13 November 2026), so the simulation uses masses the
+# simulated gripper holds. The real arm handles the real masses (task specification 2.2).
 BOTTLE_ITEMS = ("water bottle", "soft drink bottle")
 BOTTLE_SIZES = {"small": (0.029, 0.080), "large": (0.0325, 0.1025)}
-BOTTLE_MASS = {"small": 0.37, "large": 0.53}
+BOTTLE_MASS = {"small": 0.12, "large": 0.15}
+BOTTLE_MASS_REAL = {"small": 0.37, "large": 0.53}
 SIZE_PAIR_SHARE = 0.25  # household scenes with a bottle that get its other size as well
 
 # Real-kit family (task specification 1.4): the pieces of the commercial 30-piece wooden kit

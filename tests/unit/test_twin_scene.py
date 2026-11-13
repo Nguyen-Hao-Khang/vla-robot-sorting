@@ -381,3 +381,8 @@ def test_bottle_neck_and_cap_have_a_fixed_size() -> None:
     assert math.isclose(small[2][1], 0.616 * ts.BOTTLE_R)  # unchanged for the toy bottle
     assert math.isclose(large[2][1], ts.BOTTLE_CAP_R)  # 3 cm cap on a 6.5 cm bottle
     assert math.isclose(large[2][0] + large[2][2], 0.1025)  # neck cylinder ends at the top
+
+
+def test_bottles_get_a_grippier_surface() -> None:
+    bottle = ts.LEVELS[7].object("water bottle")
+    assert ts.grip_friction(bottle) > ts.grip_friction(ts.LEVELS[3].objects[0]) == 1.0
