@@ -19,7 +19,12 @@ Every action sent to the real arm passes the safety layer in `src/vla_robot_sort
 
 The same layer runs in simulation, so rejection counts are comparable across both settings.
 
-Implemented today: items 1 and 3 (`joint_limits.py`). Items 2 and 4 are work item 3.2 in the [project plan](../project-plan.md).
+Implementation: `action_filter.py` checks every action at run time (items 1-4) and `joint_limits.py` validates planned trajectories (items 1 and 3). Thresholds live in [`configs/safety.json`](../../configs/safety.json) with two profiles:
+
+- `simulation` admits the scripted expert's motion (velocity up to 1.41 rad/s, acceleration 99th percentile up to 2.3 rad/s², tool point inside the box), measured on the first 80 simulated episodes, so the filter does not change demonstrations that the policy imitates;
+- `real` starts slower (0.5 rad/s, 2 rad/s²), with a smaller workspace box, a 0.5 s watchdog and a stop after 3 rejected actions in a row. It is revisited after the first low-speed tests on the arm.
+
+Per action the filter rejects malformed or out-of-limit targets and jumps larger than `reject_step`, clamps targets just past the limit band and the gripper command, limits joint velocity and acceleration, and rejects targets whose tool point leaves the workspace box or whose joints go below `min_link_z` (forward kinematics from the URDF, `panthera.py`). A rejected action becomes "hold position"; repeated rejections, the watchdog or `emergency_stop` latch a stop that only `reset` clears.
 
 ## Consequences
 

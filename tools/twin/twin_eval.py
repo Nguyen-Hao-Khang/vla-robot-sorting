@@ -31,15 +31,19 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 import eval_metrics as em
 import sorting_task as st
 import twin_scene as ts
 
+from vla_robot_sorting.safety import ActionSafetyFilter, SafetyConfig, Status
+
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT_VERSION = 1
 TIME_LIMIT_S = 60.0
 LIFT_DZ = 0.03  # an object counts as lifted 3 cm above its resting height
+SAFETY_CONFIG = ROOT / "configs" / "safety.json"
 COMMAND_SOURCES = ("builtin", "generated", "human")
 
 
@@ -152,46 +156,6 @@ def episode_plans(args) -> list[EpisodePlan]:
     ]
 
 
-class SafetyFilter:
-    """Simulation stand-in for the safety layer: joint-limit and step-size checks on actions.
-
-    An arm joint target outside its limits is clamped and counted as an intervention; a jump
-    larger than ``max_step`` rad from the current state stops the episode.
-    """
-
-    def __init__(self, limits: list[tuple[float, float]], max_step: float = 0.35) -> None:
-        self.limits = limits
-        self.max_step = max_step
-        self.interventions = 0
-        self.stopped = False
-
-    def check(self, action: list[float], state: list[float]) -> list[float]:
-        out = list(action)
-        changed = False
-        for i, (lo, hi) in enumerate(self.limits):
-            if i >= len(out):
-                break
-            clamped = min(max(out[i], lo), hi)
-            if clamped != out[i]:
-                out[i], changed = clamped, True
-            if i < len(state) and abs(out[i] - state[i]) > self.max_step:
-                self.stopped = True
-        self.interventions += changed
-        return out
-
-
-def arm_limits(twin) -> list[tuple[float, float]]:
-    """Joint limits of the left arm joints, in the order of the joint state."""
-    entity = twin.task.robot.left_entity
-    arm = {j.get_name() for j in twin.task.robot.left_arm_joints}
-    limits = []
-    for joint in entity.get_active_joints():
-        if joint.get_name() in arm:
-            lo, hi = (float(v) for v in joint.get_limits()[0])
-            limits.append((lo, hi))
-    return limits
-
-
 def locations(twin) -> dict[str, str]:
     xyz = twin.objects_xyz()
     return {name: ts.location_of(twin.level, p, twin.table_top) for name, p in xyz.items()}
@@ -255,7 +219,7 @@ def run_policy(twin, client, plan: EpisodePlan, fps: float, size, max_actions: i
     import numpy as np
     from envs.utils import ArmTag
 
-    safety = SafetyFilter(arm_limits(twin))
+    safety = ActionSafetyFilter(SafetyConfig.load(SAFETY_CONFIG, "simulation"))
     tracker = LiftTracker(twin.objects_xyz())
     dest = twin.level.container(plan.command.destination)
     client.reset()
@@ -268,10 +232,11 @@ def run_policy(twin, client, plan: EpisodePlan, fps: float, size, max_actions: i
         except RuntimeError as exc:
             error = str(exc)
             break
-        action = safety.check(action, [float(v) for v in state])
-        if safety.stopped:
+        decision = safety.filter(action, [float(v) for v in state], actions / fps)
+        if decision.status is Status.STOPPED:
             break
-        twin.task.take_action(np.asarray(action, dtype=np.float64), action_type="qpos")
+        command = state if decision.action is None else decision.action  # rejected: hold
+        twin.task.take_action(np.asarray(command, dtype=np.float64), action_type="qpos")
         xyz = twin.objects_xyz()
         tracker.update(xyz)
         if actions % 15 == 0 and any(

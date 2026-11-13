@@ -178,15 +178,6 @@ def test_draft_check_rejects_training_templates() -> None:
     assert draft.check_draft("đặt nó vào khay", item, {}) == "not english"
 
 
-def test_safety_filter() -> None:
-    f = te.SafetyFilter([(-1.0, 1.0), (0.0, 2.0)], max_step=0.5)
-    assert f.check([0.2, 0.1], [0.0, 0.0]) == [0.2, 0.1] and f.interventions == 0
-    assert f.check([1.2, 0.1], [0.9, 0.0]) == [1.0, 0.1] and f.interventions == 1
-    assert not f.stopped
-    f.check([0.0, 1.5], [0.0, 0.0])
-    assert f.stopped
-
-
 def test_episode_record_and_summarise_cli(tmp_path, capsys) -> None:
     plan = te.plan_episode(te.episode_seed(1, 0), "en", 0.0, {}, 0.0)
     target, dest = plan.command.targets[0], plan.command.destination
