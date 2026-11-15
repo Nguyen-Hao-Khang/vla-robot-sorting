@@ -121,7 +121,10 @@ class PolicyRunner:
         import io
 
         import numpy as np
-        from lerobot.utils.control_utils import predict_action
+        try:  # LeRobot 0.4.x
+            from lerobot.utils.control_utils import predict_action
+        except ModuleNotFoundError:  # LeRobot 0.7 (commit e581c1d, needed for Evo-1)
+            from lerobot.common.control_utils import predict_action
         from PIL import Image
 
         observation = {"observation.state": np.asarray(state, np.float32)}
@@ -129,6 +132,12 @@ class PolicyRunner:
         for key in self.image_keys:
             camera = key.removeprefix("observation.images.")
             if camera not in renamed:
+                # SmolVLA fine-tuned from smolvla_base keeps the base model's camera1..camera3 and
+                # skips cameras missing from the batch (training saw only two); other policies need all.
+                if self.policy_type == "smolvla" and any(
+                    k.removeprefix("observation.images.") in renamed for k in self.image_keys
+                ):
+                    continue
                 raise KeyError(f"missing camera '{camera}' (policy expects {self.image_keys})")
             with Image.open(io.BytesIO(renamed[camera])) as img:
                 observation[key] = np.asarray(img.convert("RGB"))
