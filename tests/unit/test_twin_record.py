@@ -228,3 +228,21 @@ def test_policy_server_reset_act_and_error_replies() -> None:
     bridge.send_message(sock, {"state": [1.0], "images": {}, "task": "boom"})
     assert "bad input" in bridge.recv_message(sock)["error"]
     sock.close()
+
+
+def test_inference_options_set_chunk_execution() -> None:
+    from types import SimpleNamespace
+
+    cfg = SimpleNamespace(type="smolvla", chunk_size=50, n_action_steps=50)
+    assert bridge.apply_inference_options(cfg, 10, None).n_action_steps == 10
+    with pytest.raises(ValueError):
+        bridge.apply_inference_options(cfg, 60, None)
+    act = SimpleNamespace(
+        type="act", chunk_size=100, n_action_steps=100, temporal_ensemble_coeff=None
+    )
+    bridge.apply_inference_options(act, None, 0.01)
+    assert act.n_action_steps == 1 and act.temporal_ensemble_coeff == 0.01
+    with pytest.raises(ValueError):
+        bridge.apply_inference_options(cfg, None, 0.01)
+    unchanged = SimpleNamespace(type="act", chunk_size=100, n_action_steps=100)
+    assert bridge.apply_inference_options(unchanged, None, None).n_action_steps == 100

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -202,3 +203,73 @@ def test_episode_record_and_summarise_cli(tmp_path, capsys) -> None:
     assert te.main(["summarise", str(path), "--by", "executor", "--json", str(out)]) == 0
     assert "| expert | 2 | 1/2" in capsys.readouterr().out
     assert json.loads(out.read_text())[0]["n"] == 2
+
+
+def test_reason_key_drops_numbers() -> None:
+    assert te.reason_key("joint 2 target -0.123 rad outside [0.00, 3.20]") == (
+        "joint # target # rad outside [#, #]"
+    )
+    assert te.reason_key("gripper clamped to its range") == "gripper clamped to its range"
+
+
+class _FakeRobot:
+    def __init__(self, state):
+        self.state = list(state)
+
+    def get_left_arm_jointState(self):
+        return list(self.state)
+
+
+class _FakeTwin:
+    """Enough of twin_console.Twin for run_actions: the arm jumps to every commanded target."""
+
+    table_top = 0.74
+
+    def __init__(self, plan, state):
+        self.level = st.to_level(plan.scene)
+        self.task = types.SimpleNamespace(robot=_FakeRobot(state))
+        self.sent = []
+
+    def objects_xyz(self):
+        return {o.name: [0.0, 0.5, self.table_top + 0.02] for o in self.level.objects}
+
+    def record_frame(self, size):
+        return self.task.robot.state, {"wrist": None}
+
+    def drive_left_arm(self, command):
+        self.sent.append([float(v) for v in command])
+        self.task.robot.state = [float(v) for v in command]
+
+    def _recover(self, arm):
+        pass
+
+    def _settle(self, steps):
+        pass
+
+
+def test_run_actions_filters_counts_reasons_and_stops_on_none(monkeypatch) -> None:
+    envs = types.ModuleType("envs")
+    utils = types.ModuleType("envs.utils")
+    utils.ArmTag = lambda name: name
+    monkeypatch.setitem(sys.modules, "envs", envs)
+    monkeypatch.setitem(sys.modules, "envs.utils", utils)
+    plan = te.plan_episode(te.episode_seed(1, 0), "en", 0.0, {}, 0.0)
+    q0 = [0.0, 1.4, 0.4, 0.6, 0.0, 0.0, 1.0]  # tool 39 cm out, 10 cm above the table
+    targets = [
+        [*q0[:6], 1.04],  # gripper slightly past open: clamped, not counted
+        [q0[0] + 0.8, *q0[1:6], 1.0],  # jump: rejected, the arm holds
+        [q0[0] + 0.01, *q0[1:6], 1.0],
+    ]
+    for safety_on in (True, False):
+        twin = _FakeTwin(plan, q0)
+        queue = iter(targets)
+        result = te.run_actions(
+            twin, plan, lambda s, i, q=queue: next(q, None), 15.0, (320, 240), 100, safety_on
+        )
+        assert result["summary"] == "3 actions" and not result["safety_stop"]
+        # without the filter the arm really jumps, so the step back is a second jump
+        assert result["safety_interventions"] == (1 if safety_on else 2)
+        assert list(result["safety_reasons"]) == ["jump of # rad from the measured state"]
+        assert twin.sent[0][6] == (1.0 if safety_on else 1.04)
+        # with the filter the rejected jump becomes "hold"; without it the raw target is sent
+        assert twin.sent[1][0] == pytest.approx(0.0 if safety_on else 0.8)

@@ -90,7 +90,12 @@ class PolicyRunner:
     """Server side (LeRobot env): load a checkpoint and map observations to actions."""
 
     def __init__(
-        self, checkpoint: Path, device: str = "auto", camera_map: dict[str, str] | None = None
+        self,
+        checkpoint: Path,
+        device: str = "auto",
+        camera_map: dict[str, str] | None = None,
+        n_action_steps: int | None = None,
+        temporal_ensemble: float | None = None,
     ) -> None:
         import torch
         from lerobot.configs.policies import PreTrainedConfig
@@ -101,6 +106,7 @@ class PolicyRunner:
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
         cfg.device = device
+        apply_inference_options(cfg, n_action_steps, temporal_ensemble)
         self.device = torch.device(device)
         self.policy = get_policy_class(cfg.type).from_pretrained(str(checkpoint), config=cfg)
         self.policy.to(self.device).eval()
@@ -113,6 +119,8 @@ class PolicyRunner:
         ]
         self.camera_map = camera_map or {}
         self.policy_type = cfg.type
+        self.n_action_steps = getattr(cfg, "n_action_steps", None)
+        self.temporal_ensemble = getattr(cfg, "temporal_ensemble_coeff", None)
 
     def reset(self) -> None:
         self.policy.reset()
@@ -147,6 +155,27 @@ class PolicyRunner:
         return [float(v) for v in action.reshape(-1).tolist()]
 
 
+def apply_inference_options(cfg, n_action_steps: int | None, temporal_ensemble: float | None):
+    """Execution options that need no retraining.
+
+    ``n_action_steps``: how many actions of each predicted chunk run before the policy predicts
+    again (fewer means more frequent closed-loop corrections). ``temporal_ensemble``: ACT only;
+    predicts every step and averages the overlapping chunks with weights exp(-coeff * i)
+    (ACT paper, coefficient 0.01), which needs n_action_steps = 1.
+    """
+    if temporal_ensemble is not None:
+        if cfg.type != "act":
+            raise ValueError("temporal ensembling is implemented for ACT only")
+        cfg.temporal_ensemble_coeff = temporal_ensemble
+        cfg.n_action_steps = 1
+    elif n_action_steps is not None:
+        chunk = getattr(cfg, "chunk_size", None)
+        if n_action_steps < 1 or (chunk is not None and n_action_steps > chunk):
+            raise ValueError(f"n_action_steps must be in [1, {chunk}]")
+        cfg.n_action_steps = n_action_steps
+    return cfg
+
+
 def parse_camera_map(text: str) -> dict[str, str]:
     pairs = [item.split("=", 1) for item in text.split(",") if item.strip()]
     if any(len(p) != 2 or not p[0].strip() or not p[1].strip() for p in pairs):
@@ -160,7 +189,10 @@ def serve(runner: PolicyRunner, port: int) -> None:
         server.bind(("127.0.0.1", port))
         server.listen(1)
         print(
-            f"POLICY_SERVER_READY type={runner.policy_type} cameras={runner.image_keys} port={port}",
+            f"POLICY_SERVER_READY type={runner.policy_type} cameras={runner.image_keys} "
+            f"n_action_steps={getattr(runner, 'n_action_steps', None)} "
+            f"temporal_ensemble={getattr(runner, 'temporal_ensemble', None)} "
+            f"port={port}",
             flush=True,
         )
         while True:
@@ -197,8 +229,27 @@ def main(argv: list[str] | None = None) -> int:
         default="",
         help="twin=policy camera names, e.g. wrist=camera1,workspace=camera2 (SmolVLA fine-tuned from smolvla_base)",
     )
+    s.add_argument(
+        "--n-action-steps",
+        type=int,
+        default=None,
+        help="actions executed from each predicted chunk before predicting again (default: as trained)",
+    )
+    s.add_argument(
+        "--temporal-ensemble",
+        type=float,
+        default=None,
+        help="ACT only: temporal ensembling coefficient (0.01 in the ACT paper); predicts every step",
+    )
     args = parser.parse_args(argv)
-    serve(PolicyRunner(args.checkpoint, args.device, parse_camera_map(args.camera_map)), args.port)
+    runner = PolicyRunner(
+        args.checkpoint,
+        args.device,
+        parse_camera_map(args.camera_map),
+        args.n_action_steps,
+        args.temporal_ensemble,
+    )
+    serve(runner, args.port)
     return 0
 
 

@@ -7,7 +7,9 @@ followed by a gripper command. The filter applies, in order:
 1. format: the action has the configured length and only finite values, else it is rejected;
 2. joint limits: a target inside the limit band is accepted; up to ``clamp_tolerance`` past
    the band it is clamped; further out it is rejected;
-3. gripper range: the gripper command is clamped to its range;
+3. gripper range: the gripper command is clamped to its range; a command up to
+   ``gripper_tolerance`` outside the range is clamped silently (a regressed policy output such
+   as 1.03 for "fully open" is not an intervention), further out the clamp is recorded;
 4. rate limits: the commanded joint velocity and its change per step are limited to the
    configured velocity and acceleration (the target is moved closer to the current state);
    a jump larger than ``reject_step`` from the measured state is rejected outright;
@@ -59,6 +61,7 @@ class SafetyConfig:
     workspace_max: Vec = (0.65, 0.32, 0.40)
     min_link_z: float = 0.05  # m; joints 2-6 stay above the mounting surface
     gripper_range: tuple[float, float] | None = None  # (min, max) of the gripper command
+    gripper_tolerance: float = 0.0  # outside the range by at most this: clamped, not recorded
     watchdog_timeout_s: float = 0.5
     max_consecutive_rejections: int = 5
 
@@ -68,8 +71,8 @@ class SafetyConfig:
         if any(lo + 2 * self.margin >= hi for lo, hi in zip(self.lower, self.upper, strict=True)):
             raise ValueError("every joint needs lower + 2 * margin < upper")
         positive = (self.max_velocity, self.max_acceleration, self.reject_step, self.control_dt)
-        if min(positive) <= 0 or self.watchdog_timeout_s <= 0:
-            raise ValueError("rates, step, dt and timeout must be positive")
+        if min(positive) <= 0 or self.watchdog_timeout_s <= 0 or self.gripper_tolerance < 0:
+            raise ValueError("rates, step, dt and timeout must be positive, tolerances >= 0")
         if any(a >= b for a, b in zip(self.workspace_min, self.workspace_max, strict=True)):
             raise ValueError("workspace_min must be below workspace_max on every axis")
 
@@ -183,8 +186,10 @@ class ActionSafetyFilter:
             g_lo, g_hi = cfg.gripper_range
             g = values[n]
             if not g_lo <= g <= g_hi:
+                outside = g_lo - g if g < g_lo else g - g_hi
                 g = min(max(g, g_lo), g_hi)
-                reasons.append("gripper clamped to its range")
+                if outside > cfg.gripper_tolerance:
+                    reasons.append("gripper clamped to its range")
             gripper = [g]
 
         # 4. rate limits
