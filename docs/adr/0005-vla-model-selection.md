@@ -77,6 +77,19 @@ Reading:
 - Both Evo-1 checkpoints are worse than the chunk-hold baseline, even on their own training episodes: consecutive predicted actions jump by tenths of a radian. The likely cause is training, not inference: in stage 1 the vision-language backbone is frozen and the action head starts from random weights, and LeRobot's default learning rate for Evo-1 (1e-5, cosine decay) is low for a head trained from scratch in 10,000 steps. Evo-1 therefore needs a second training run (higher learning rate) before measurement 3 can compare it fairly with SmolVLA.
 - English and Vietnamese commands give similar open-loop errors for every checkpoint. Open-loop error does not show whether the policy picks the named object; the closed-loop simulation (measurement 3) does.
 
+### First closed-loop results (15 November 2026)
+
+Seed-9 block scenes, built-in commands, 30 English and 30 Vietnamese episodes per checkpoint, safety profile `simulation` (before the gripper tolerance of ADR 0004's revision), commit `f197abd` with the dual-arm `take_action` fix of this change. The scripted expert succeeds in 220 of 220 episodes on the same scenes.
+
+| Checkpoint | Language | Success | Target selected | Grasped | Safety stops |
+|---|---|---|---|---|---|
+| ACT, seed 1 | en | 1/30 | 2/30 | 6/30 | 23/30 |
+| ACT, seed 1 | vi | 0/30 | 2/30 | 5/30 | 23/30 |
+| SmolVLA, seed 1 | en | 0/30 | 1/30 | 5/30 | 2/30 |
+| SmolVLA, seed 1 | vi | 2/30 | 3/30 | 8/30 | 2/30 |
+
+Both checkpoints are far from usable. ACT ignores the command (it lifts the same objects in English and Vietnamese, as expected without language input), and SmolVLA picks the named object in 4 of its 13 grasps, close to chance with two to four objects. Before more training, the replay check of the [evaluation protocol](../evaluation-protocol.md) tests whether the action interface itself loses success, and shorter chunk execution is tried at serving time.
+
 ## Decision
 
 Pending measurement 3, which needs the first simulated dataset (plan item 1.3). If measurement 3 shows no clear difference, the inference latency on the deployment GPU decides.

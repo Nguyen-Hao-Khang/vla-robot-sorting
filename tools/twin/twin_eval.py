@@ -13,8 +13,15 @@ as one JSON line; ``summarise`` turns the JSONL into the tables of docs/evaluati
   python tools/twin/twin_eval.py run --executor policy --policy-server 127.0.0.1:5555 \
       --checkpoint smolvla_v1_step15000 --episodes 30 --seed 1 --language vi \
       --command-source generated --out results/smolvla_vi.jsonl
+  # pipeline check: the expert runs once, its 15 Hz joint targets are replayed through the
+  # policy path (safety filter, take_action) on the same scene
+  python tools/twin/twin_eval.py run --executor replay --episodes 10 --seed 9 \
+      --out results/replay.jsonl
   # anywhere
   python tools/twin/twin_eval.py summarise results/*.jsonl --by executor,language,command_kind
+
+``--no-safety`` bypasses the safety filter (its decisions are still counted). It is a diagnostic
+only: protocol results run with the filter, and the record says which was used.
 """
 
 from __future__ import annotations
@@ -23,9 +30,11 @@ import argparse
 import csv
 import json
 import random
+import re
 import subprocess
 import sys
 import time
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -215,31 +224,61 @@ def run_expert(twin, plan: EpisodePlan, clock: StepClock) -> dict:
     }
 
 
-def run_policy(twin, client, plan: EpisodePlan, fps: float, size, max_actions: int) -> dict:
+def reason_key(reason: str) -> str:
+    """Safety reason without its numbers, so equal causes count together."""
+    return re.sub(r"-?\d+(\.\d+)?", "#", reason)
+
+
+def run_actions(
+    twin,
+    plan: EpisodePlan,
+    act: Callable[[object, dict], list[float] | None],
+    fps: float,
+    size,
+    max_actions: int,
+    safety_on: bool = True,
+    with_images: bool = True,
+) -> dict:
+    """Drive the arm with one joint target per step from ``act(state, images)`` until it
+    returns None, the target objects rest in the destination, the safety filter stops, or
+    ``max_actions`` is reached. Every target passes the safety filter; with ``safety_on``
+    False the raw target is sent and the filter only counts."""
     import numpy as np
     from envs.utils import ArmTag
 
     safety = ActionSafetyFilter(SafetyConfig.load(SAFETY_CONFIG, "simulation"))
+    reasons: Counter[str] = Counter()
     tracker = LiftTracker(twin.objects_xyz())
     dest = twin.level.container(plan.command.destination)
-    client.reset()
     actions = 0
     error = None
-    for actions in range(1, max_actions + 1):
-        state, images = twin.record_frame(size)
+    stopped = False
+    for step in range(1, max_actions + 1):
+        if with_images:
+            state, images = twin.record_frame(size)
+        else:
+            state, images = np.asarray(twin.task.robot.get_left_arm_jointState(), np.float32), {}
         try:
-            action = client.act(state, images, plan.command.text)
+            action = act(state, images)
         except RuntimeError as exc:
             error = str(exc)
             break
-        decision = safety.filter(action, [float(v) for v in state], actions / fps)
-        if decision.status is Status.STOPPED:
+        if action is None:
             break
-        command = state if decision.action is None else decision.action  # rejected: hold
-        twin.task.take_action(np.asarray(command, dtype=np.float64), action_type="qpos")
+        actions = step
+        decision = safety.filter(action, [float(v) for v in state], step / fps)
+        reasons.update(reason_key(r) for r in decision.reasons)
+        if safety_on:
+            if decision.status is Status.STOPPED:
+                stopped = True
+                break
+            command = state if decision.action is None else decision.action  # rejected: hold
+        else:
+            command = action
+        twin.drive_left_arm(command)
         xyz = twin.objects_xyz()
         tracker.update(xyz)
-        if actions % 15 == 0 and any(
+        if step % 15 == 0 and any(
             ts.is_inside(dest, xyz[t], twin.table_top) and xyz[t][2] <= tracker.rest_z[t] + 0.02
             for t in plan.command.targets
         ):
@@ -250,10 +289,45 @@ def run_policy(twin, client, plan: EpisodePlan, fps: float, size, max_actions: i
         "lifted": tracker.order,
         "episode_time_s": round(actions / fps, 2),
         "safety_interventions": safety.interventions,
-        "safety_stop": safety.stopped,
+        "safety_stop": stopped,
+        "safety_reasons": dict(reasons.most_common()),
         "executor_phase": None,
-        "summary": error or f"{actions} policy actions",
+        "summary": error or f"{actions} actions",
     }
+
+
+def run_policy(
+    twin, client, plan: EpisodePlan, fps: float, size, max_actions: int, safety_on: bool = True
+) -> dict:
+    client.reset()
+    return run_actions(
+        twin,
+        plan,
+        lambda state, images: client.act(state, images, plan.command.text),
+        fps,
+        size,
+        max_actions,
+        safety_on,
+    )
+
+
+def record_expert_targets(twin, plan: EpisodePlan, clock: StepClock, fps: float):
+    """Run the expert and sample its joint state at ``fps``; the targets are the next samples,
+    exactly as twin_record.py builds training actions."""
+    import numpy as np
+    from twin_record import FrameRecorder
+
+    recorder = FrameRecorder(
+        lambda: (np.asarray(twin.task.robot.get_left_arm_jointState(), np.float32), {}),
+        twin.step_dt(),
+        fps,
+    )
+    recorder.attach(twin.task)
+    recorder.start()
+    result = run_expert(twin, plan, clock)
+    recorder.stop()
+    _states, targets, _times = recorder.arrays()
+    return result, targets
 
 
 def git_commit() -> str:
@@ -311,6 +385,7 @@ def episode_record(run: dict, index: int, plan: EpisodePlan, before, after, resu
         "lifted": result["lifted"],
         "episode_time_s": result["episode_time_s"],
         "safety_interventions": result["safety_interventions"],
+        "safety_reasons": result.get("safety_reasons", {}),
         "failure_phase": phase,
         "summary": result["summary"],
     }
@@ -324,7 +399,10 @@ def run(args) -> int:
     run_meta = {
         "format": FORMAT_VERSION,
         "executor": args.executor,
-        "checkpoint": args.checkpoint if args.executor == "policy" else "scripted expert",
+        "checkpoint": {"policy": args.checkpoint, "replay": "expert replay"}.get(
+            args.executor, "scripted expert"
+        ),
+        "safety": "off" if args.no_safety else "on",
         "command_source": args.command_source,
         "commit": git_commit(),
         "run_seed": args.seed,
@@ -354,8 +432,33 @@ def run(args) -> int:
         seed_everything(f"eval/{plan.seed}")
         if args.executor == "expert":
             result = run_expert(twin, plan, clock)
-        else:
-            result = run_policy(twin, client, plan, args.fps, size, int(TIME_LIMIT_S * args.fps))
+        elif args.executor == "policy":
+            result = run_policy(
+                twin, client, plan, args.fps, size, int(TIME_LIMIT_S * args.fps), not args.no_safety
+            )
+        else:  # replay: expert once, then its targets on the same scene through the policy path
+            expert, targets = record_expert_targets(twin, plan, clock, args.fps)
+            twin.setup()
+            clock = StepClock(twin.task, twin.step_dt())
+            twin.reset_layout(random.Random(plan.layout_rng_seed))
+            before = locations(twin)
+            seed_everything(f"eval/{plan.seed}")
+            queue = iter(targets.tolist())
+            result = run_actions(
+                twin,
+                plan,
+                lambda _state, _images, q=queue: next(q, None),
+                args.fps,
+                size,
+                len(targets),
+                not args.no_safety,
+                with_images=False,
+            )
+            expert_ok = expert["executor_phase"] is None
+            result["summary"] = (
+                f"expert {'ok' if expert_ok else 'failed'} ({len(targets)} targets); replay "
+                + result["summary"]
+            )
         record = episode_record(run_meta, index, plan, before, locations(twin), result)
         with args.out.open("a", encoding="utf-8") as sink:
             sink.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -395,7 +498,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path.home() / "worktrees/Panthera-HT_RoboTwin/RoboTwin",
     )
-    r.add_argument("--executor", choices=("expert", "policy"), required=True)
+    r.add_argument("--executor", choices=("expert", "policy", "replay"), required=True)
     r.add_argument("--policy-server", default="127.0.0.1:5555")
     r.add_argument("--checkpoint", default="", help="label of the served checkpoint (logged)")
     r.add_argument("--episodes", type=int, default=30)
@@ -420,6 +523,11 @@ def main(argv: list[str] | None = None) -> int:
         "--allow-unreviewed", action="store_true", help="also use rows not marked Reviewed=yes"
     )
     r.add_argument("--fps", type=float, default=15.0, help="policy action rate")
+    r.add_argument(
+        "--no-safety",
+        action="store_true",
+        help="diagnostic: send targets without the safety filter (decisions are still counted)",
+    )
     r.add_argument("--out", type=Path, required=True)
     s = sub.add_parser("summarise", help="tables from result JSONL files (no simulator needed)")
     s.add_argument("results", type=Path, nargs="+")

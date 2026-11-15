@@ -26,6 +26,8 @@ Implementation: `action_filter.py` checks every action at run time (items 1-4) a
 
 Per action the filter rejects malformed or out-of-limit targets and jumps larger than `reject_step`, clamps targets just past the limit band and the gripper command, limits joint velocity and acceleration, and rejects targets whose tool point leaves the workspace box or whose joints go below `min_link_z` (forward kinematics from the URDF, `panthera.py`). A rejected action becomes "hold position"; repeated rejections, the watchdog or `emergency_stop` latch a stop that only `reset` clears.
 
+Revision, 15 November 2026: the first closed-loop runs of learned policies showed that 76% of the ACT baseline's interventions were gripper commands a few hundredths past the open or closed value (for example 1.04), which regression produces and which the arm cannot execute anyway. Both profiles now clamp a gripper command up to `gripper_tolerance` (0.1) outside its range without recording it; further out the clamp is still recorded. No limit on motion changed: joint limits, rates, workspace and stop rules are as before, and the gripper still never receives a value outside its range.
+
 ## Consequences
 
 - Nobody relaxes a threshold to make a run pass ([contributing](../../CONTRIBUTING.md#3-code)).

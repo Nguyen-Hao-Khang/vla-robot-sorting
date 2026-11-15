@@ -1048,6 +1048,18 @@ class Twin:
         state = np.asarray(task.robot.get_left_arm_jointState(), np.float32)
         return state, images
 
+    def drive_left_arm(self, action) -> None:
+        """Move the arm to one joint-position target (6 joints + gripper) with take_action.
+
+        RoboTwin's take_action(qpos) moves both arms of its dual-arm interface: left joints and
+        gripper, then right joints and gripper. The Panthera twin uses the left arm only, so the
+        right arm is commanded to stay where it is.
+        """
+        import numpy as np
+
+        right = np.asarray(self.task.robot.get_right_arm_jointState(), dtype=np.float64)
+        self.task.take_action(dual_arm_action(action, right), action_type="qpos")
+
     def reset_layout(self, rng) -> dict[str, tuple[float, float, float]]:
         """Re-randomise object poses on the same scene (no rebuild) and send the arm home."""
         import sapien
@@ -2031,8 +2043,6 @@ class Twin:
         max_actions: int = 450,
     ) -> Outcome:
         """Learned executor: a LeRobot policy (ACT/SmolVLA) drives the arm from camera images."""
-        import numpy as np
-
         objects_xyz = self.objects_xyz()
         blocked = precheck(self.level, obj_name, dest_name, objects_xyz, self.table_top)
         if blocked is not None:
@@ -2053,7 +2063,7 @@ class Twin:
         for i in range(max_actions):
             state, images = self.record_frame(size)
             action = client.act(state, images, text)
-            self.task.take_action(np.asarray(action, dtype=np.float64), action_type="qpos")
+            self.drive_left_arm(action)
             if (i + 1) % 15 == 0:
                 xyz = self.object_xyz(obj_name)
                 if policy_done(dest, obj, xyz, self.table_top):
@@ -2106,6 +2116,13 @@ class Twin:
                 self.nudge_into_limits()
         except Exception:  # best effort; the failure is already reported
             self.force_home(arm)
+
+
+def dual_arm_action(left, right):
+    """Left-arm target followed by the right arm's current state, as take_action(qpos) expects."""
+    import numpy as np
+
+    return np.concatenate([np.asarray(left, dtype=np.float64), np.asarray(right, dtype=np.float64)])
 
 
 def policy_instruction(obj: str, dest: str, kind: str) -> str:

@@ -853,3 +853,9 @@ def test_twenty_degree_tilt_is_not_held_as_vertical() -> None:
 
     assert tg.hold_vector(q_about_y(0), "vertical") is not None
     assert tg.hold_vector(q_about_y(20), "vertical") is None
+
+
+def test_dual_arm_action_appends_the_right_arm_state() -> None:
+    # RoboTwin's take_action(qpos) expects left joints + gripper, then right joints + gripper
+    action = twin.dual_arm_action([0.1] * 7, [0.0, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0])
+    assert action.shape == (14,) and action[6] == 0.1 and action[13] == 1.0

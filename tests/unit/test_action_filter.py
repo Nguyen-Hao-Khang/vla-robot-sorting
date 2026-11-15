@@ -53,6 +53,18 @@ def test_gripper_is_clamped_and_malformed_actions_rejected() -> None:
     assert f.filter((*Q0[:5], math.nan, 0.5), Q0).status is Status.REJECTED
 
 
+def test_small_gripper_overshoot_is_clamped_without_an_intervention() -> None:
+    f = fast(gripper_tolerance=0.1)
+    d = f.filter((*Q0, 1.05), Q0)
+    assert d.status is Status.PASS and d.action[-1] == 1.0 and f.interventions == 0
+    d = f.filter((*Q0, -0.08), Q0)
+    assert d.status is Status.PASS and d.action[-1] == 0.0
+    d = f.filter((*Q0, 1.3), Q0)
+    assert d.status is Status.LIMITED and d.action[-1] == 1.0 and f.interventions == 1
+    with pytest.raises(ValueError):
+        SafetyConfig(lower=LOWER, upper=UPPER, gripper_tolerance=-0.1)
+
+
 def test_large_jump_is_rejected() -> None:
     f = make()
     target = (Q0[0] + 0.5, *Q0[1:], 0.5)
@@ -114,7 +126,7 @@ def test_watchdog_and_emergency_stop() -> None:
 def test_config_profiles_load_and_validate(tmp_path) -> None:
     for profile in ("simulation", "real"):
         cfg = SafetyConfig.load(ROOT / "configs" / "safety.json", profile)
-        assert cfg.dof == 6 and cfg.gripper_range == (0.0, 1.0)
+        assert cfg.dof == 6 and cfg.gripper_range == (0.0, 1.0) and cfg.gripper_tolerance == 0.1
         # the home posture (all zeros) must be accepted, not rejected
         home = (0.0,) * 6
         assert ActionSafetyFilter(cfg).filter((*home, 0.0), home).status is not Status.REJECTED
