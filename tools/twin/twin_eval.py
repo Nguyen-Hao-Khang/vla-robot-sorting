@@ -20,6 +20,10 @@ as one JSON line; ``summarise`` turns the JSONL into the tables of docs/evaluati
   # anywhere
   python tools/twin/twin_eval.py summarise results/*.jsonl --by executor,language,command_kind
 
+``--record-dir`` (expert executor) also saves each episode in the raw training format of
+twin_record.py, so demonstrations can be recorded on exactly the evaluation scenes (for example
+to check that a policy reproduces demonstrations it was trained on).
+
 ``--no-safety`` bypasses the safety filter (its decisions are still counted). It is a diagnostic
 only: protocol results run with the filter, and the record says which was used.
 """
@@ -330,6 +334,57 @@ def record_expert_targets(twin, plan: EpisodePlan, clock: StepClock, fps: float)
     return result, targets
 
 
+def scene_meta(scene: st.Scene) -> dict:
+    """The scene description twin_record.py stores in meta.json."""
+    return {
+        "objects": [
+            {
+                "name": o.name,
+                "shape": o.shape,
+                "colour": o.colour,
+                "size": o.size,
+                "item": o.item,
+                "category": o.category,
+            }
+            for o in scene.objects
+        ],
+        "containers": [
+            {
+                "name": c.name,
+                "colour": c.colour,
+                "outline": c.outline,
+                "depth": c.depth,
+                "position": c.position,
+            }
+            for c in scene.containers
+        ],
+    }
+
+
+def record_meta(plan: EpisodePlan, result: dict, fps: float, spawns, size) -> dict:
+    command = plan.command
+    return {
+        "task": command.text,
+        "language": command.language,
+        "command_kind": command.kind,
+        "family": plan.scene.family,
+        "object_reference": dict(command.object_reference),
+        "container_reference": list(command.container_reference),
+        "targets": list(command.targets),
+        "object": plan.expert_target,
+        "destination": command.destination,
+        "scene": scene_meta(plan.scene),
+        "success": result["executor_phase"] is None,
+        "summary": result["summary"],
+        "fps": fps,
+        "seed": plan.seed,
+        "episode_key": f"eval-{plan.seed}",
+        "spawns": {k: list(v) for k, v in (spawns or {}).items()},
+        "image_size": list(size),
+        "source": "robotwin_twin_scripted_expert (twin_eval)",
+    }
+
+
 def git_commit() -> str:
     try:
         out = subprocess.run(
@@ -427,10 +482,30 @@ def run(args) -> int:
         twin.custom_level = st.to_level(plan.scene)
         twin.setup()
         clock = StepClock(twin.task, twin.step_dt())
-        twin.reset_layout(random.Random(plan.layout_rng_seed))
+        spawns = twin.reset_layout(random.Random(plan.layout_rng_seed))
         before = locations(twin)
         seed_everything(f"eval/{plan.seed}")
-        if args.executor == "expert":
+        if args.executor == "expert" and args.record_dir:
+            from twin_record import FrameRecorder, cv2_saver, next_episode_index, write_episode
+
+            recorder = FrameRecorder(lambda: twin.record_frame(size), twin.step_dt(), args.fps)
+            recorder.attach(twin.task)
+            recorder.start()
+            result = run_expert(twin, plan, clock)
+            recorder.stop()
+            states, targets, times = recorder.arrays()
+            args.record_dir.mkdir(parents=True, exist_ok=True)
+            write_episode(
+                args.record_dir,
+                next_episode_index(args.record_dir),
+                states,
+                targets,
+                times,
+                recorder.images,
+                record_meta(plan, result, args.fps, spawns, size),
+                cv2_saver(),
+            )
+        elif args.executor == "expert":
             result = run_expert(twin, plan, clock)
         elif args.executor == "policy":
             result = run_policy(
@@ -524,6 +599,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     r.add_argument("--fps", type=float, default=15.0, help="policy action rate")
     r.add_argument(
+        "--record-dir",
+        type=Path,
+        default=None,
+        help="expert executor: also save every episode in the raw training format (twin_record.py)",
+    )
+    r.add_argument(
         "--no-safety",
         action="store_true",
         help="diagnostic: send targets without the safety filter (decisions are still counted)",
@@ -535,6 +616,8 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--json", type=Path, default=None, help="also write the rows as JSON")
     args = parser.parse_args(argv)
     if args.cmd == "run":
+        if args.record_dir and args.executor != "expert":
+            parser.error("--record-dir needs --executor expert")
         if args.executor == "policy" and not args.checkpoint:
             parser.error("--checkpoint is required with --executor policy")
         return run(args)

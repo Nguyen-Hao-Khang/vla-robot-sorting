@@ -273,3 +273,22 @@ def test_run_actions_filters_counts_reasons_and_stops_on_none(monkeypatch) -> No
         assert twin.sent[0][6] == (1.0 if safety_on else 1.04)
         # with the filter the rejected jump becomes "hold"; without it the raw target is sent
         assert twin.sent[1][0] == pytest.approx(0.0 if safety_on else 0.8)
+
+
+def test_record_meta_matches_the_recorder_format() -> None:
+    plan = te.plan_episode(te.episode_seed(9, 0), "vi", 0.3, {}, 0.0)
+    result = {"executor_phase": None, "summary": "ok"}
+    meta = te.record_meta(plan, result, 15.0, {"a": (0.1, 0.2, 0.3)}, (320, 240))
+    assert meta["task"] == plan.command.text and meta["language"] == "vi"
+    assert meta["success"] and meta["seed"] == plan.seed and meta["fps"] == 15.0
+    assert meta["object"] in meta["targets"] and meta["spawns"] == {"a": [0.1, 0.2, 0.3]}
+    assert {o["name"] for o in meta["scene"]["objects"]} == {o.name for o in plan.scene.objects}
+    assert not te.record_meta(plan, {"executor_phase": "grasp", "summary": "x"}, 15, {}, (1, 1))[
+        "success"
+    ]
+
+
+def test_record_dir_needs_the_expert(capsys) -> None:
+    with pytest.raises(SystemExit):
+        te.main(["run", "--executor", "replay", "--record-dir", "x", "--out", "y.jsonl"])
+    assert "--record-dir needs --executor expert" in capsys.readouterr().err
