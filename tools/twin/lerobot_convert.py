@@ -18,6 +18,7 @@ import argparse
 import inspect
 import json
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -107,11 +108,19 @@ def main(argv: list[str] | None = None) -> int:
         "robot_type": args.robot_type,
         "use_videos": not args.images,
     }
-    if args.vcodec and "vcodec" in inspect.signature(LeRobotDataset.create).parameters:
+    create_params = inspect.signature(LeRobotDataset.create).parameters
+    if args.vcodec and "vcodec" in create_params:  # LeRobot 0.4.x
         kwargs["vcodec"] = args.vcodec
+    elif args.vcodec and "rgb_encoder" in create_params:  # LeRobot 0.7: encoder config object
+        from lerobot.configs.video import RGBEncoderConfig
+
+        kwargs["rgb_encoder"] = RGBEncoderConfig(vcodec=args.vcodec)
+    elif args.vcodec:
+        print(f"WARNING: this LeRobot version takes no codec option; --vcodec {args.vcodec} ignored")
     dataset = LeRobotDataset.create(**kwargs)
     total = 0
-    for folder in folders:
+    started = time.time()
+    for n, folder in enumerate(folders, 1):
         meta, states, actions, frames = load_episode(folder)
         if (
             sorted(frames) != cameras
@@ -127,6 +136,9 @@ def main(argv: list[str] | None = None) -> int:
             dataset.add_frame(frame)
         dataset.save_episode()
         total += len(states)
+        if n % 10 == 0 or n == len(folders):
+            rate = (time.time() - started) / n
+            print(f"CONVERT_PROGRESS {n}/{len(folders)} {rate:.1f} s/episode", flush=True)
     if hasattr(dataset, "finalize"):
         dataset.finalize()
     print(
