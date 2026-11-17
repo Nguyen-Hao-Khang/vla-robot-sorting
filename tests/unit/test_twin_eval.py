@@ -291,4 +291,56 @@ def test_record_meta_matches_the_recorder_format() -> None:
 def test_record_dir_needs_the_expert(capsys) -> None:
     with pytest.raises(SystemExit):
         te.main(["run", "--executor", "replay", "--record-dir", "x", "--out", "y.jsonl"])
-    assert "--record-dir needs --executor expert" in capsys.readouterr().err
+    assert "--record-dir needs --executor expert or dagger" in capsys.readouterr().err
+
+
+def test_dagger_needs_a_record_dir_and_a_checkpoint(capsys) -> None:
+    for argv, message in (
+        (["--checkpoint", "c"], "--executor dagger needs --record-dir"),
+        (["--record-dir", "x"], "--checkpoint is required with --executor dagger"),
+        (
+            ["--checkpoint", "c", "--record-dir", "x", "--dagger-min-actions", "50",
+             "--dagger-max-actions", "10"],
+            "need 1 <= --dagger-min-actions",
+        ),
+    ):
+        with pytest.raises(SystemExit):
+            te.main(["run", "--executor", "dagger", "--out", "y.jsonl", *argv])
+        assert message in capsys.readouterr().err
+
+
+def test_dagger_prefix_is_seeded_and_in_range() -> None:
+    plans = [te.plan_episode(te.episode_seed(41, i), "en", 0.3, {}, 0.0) for i in range(20)]
+    first = [te.dagger_prefix_actions(p, 15, 150) for p in plans]
+    assert first == [te.dagger_prefix_actions(p, 15, 150) for p in plans]
+    assert all(15 <= n <= 150 for n in first) and len(set(first)) > 5
+    vi = te.plan_episode(te.episode_seed(41, 3), "vi", 0.3, {}, 0.0)
+    assert te.dagger_prefix_actions(vi, 15, 150) == first[3]  # paired across languages
+
+
+def test_run_actions_without_recover_leaves_the_arm(monkeypatch) -> None:
+    envs = types.ModuleType("envs")
+    utils = types.ModuleType("envs.utils")
+    utils.ArmTag = lambda name: name
+    monkeypatch.setitem(sys.modules, "envs", envs)
+    monkeypatch.setitem(sys.modules, "envs.utils", utils)
+    plan = te.plan_episode(te.episode_seed(1, 0), "en", 0.0, {}, 0.0)
+    q0 = [0.0, 1.4, 0.4, 0.6, 0.0, 0.0, 1.0]
+    calls = []
+    for recover in (True, False):
+        twin = _FakeTwin(plan, q0)
+        twin._recover = lambda arm, c=calls, r=recover: c.append(r)
+        queue = iter([[q0[0] + 0.01, *q0[1:]]])
+        te.run_actions(twin, plan, lambda s, i, q=queue: next(q, None), 15.0, (1, 1), 5,
+                       recover=recover)
+    assert calls == [True]
+
+
+def test_record_meta_keeps_the_dagger_prefix() -> None:
+    plan = te.plan_episode(te.episode_seed(41, 0), "en", 0.3, {}, 0.0)
+    info = {"policy": "p", "actions": 30, "lifted": [], "safety_stop": False}
+    meta = te.record_meta(plan, {"executor_phase": None, "summary": "ok"}, 15.0, {}, (1, 1), info)
+    assert meta["dagger_prefix"] == info
+    assert "dagger_prefix" not in te.record_meta(
+        plan, {"executor_phase": None, "summary": "ok"}, 15.0, {}, (1, 1)
+    )
