@@ -17,6 +17,15 @@ A policy that sees the same layout with the same command learns positions instea
 - pairs each layout with several commands that target different objects;
 - records the random seed so the dataset can be rebuilt exactly.
 
+### 1.1.1 Layout coverage and corrective demonstrations
+
+`panthera-twin-blocks-v1` (682 episodes) reused each layout for up to three commands, so it holds only 274 distinct layouts, and 408 episodes start with objects already in a container. A SmolVLA policy trained on it picks reliably once it is near an object but misplaces the arm by 10–16 cm while approaching the object and the container on unseen layouts, and reaches 0 of 20 on the seed-9 evaluation scenes. Dataset v1 therefore adds:
+
+- one demonstration per fresh layout (`twin_eval.py --executor expert --record-dir`, scene seeds other than 9);
+- corrective demonstrations (`twin_eval.py --executor dagger`): the policy drives for 1–10 s, the gripper opens, and the scripted expert completes the command from that state; only the expert part is saved.
+
+`tools/twin/record_dataset_v1.sh` records both overnight with an end time for each part.
+
 ### 1.2 Commands
 
 Commands come from three sources ([task specification](task-spec.md#53-sources-of-commands)):

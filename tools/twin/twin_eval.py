@@ -22,7 +22,18 @@ as one JSON line; ``summarise`` turns the JSONL into the tables of docs/evaluati
 
 ``--record-dir`` (expert executor) also saves each episode in the raw training format of
 twin_record.py, so demonstrations can be recorded on exactly the evaluation scenes (for example
-to check that a policy reproduces demonstrations it was trained on).
+to check that a policy reproduces demonstrations it was trained on). With seeds other than the
+evaluation seed it records one demonstration per fresh scene.
+
+``--executor dagger`` records corrective demonstrations (DAgger-style relabelling by the expert):
+the served policy drives the arm for a seeded random 1-10 s, the gripper opens, and the scripted
+expert then completes the command from wherever the policy left the arm and the objects. Only the
+expert part is saved (``--record-dir``), so the data shows how to recover from the states the
+policy actually reaches:
+
+  python tools/twin/twin_eval.py run --executor dagger --policy-server 127.0.0.1:5555 \
+      --checkpoint smolvla_blocks_v1 --episodes 100 --seed 41 --language en \
+      --command-source generated --record-dir /mnt/data/raw_dagger --out results/dagger_en.jsonl
 
 ``--no-safety`` bypasses the safety filter (its decisions are still counted). It is a diagnostic
 only: protocol results run with the filter, and the record says which was used.
@@ -242,11 +253,13 @@ def run_actions(
     max_actions: int,
     safety_on: bool = True,
     with_images: bool = True,
+    recover: bool = True,
 ) -> dict:
     """Drive the arm with one joint target per step from ``act(state, images)`` until it
     returns None, the target objects rest in the destination, the safety filter stops, or
     ``max_actions`` is reached. Every target passes the safety filter; with ``safety_on``
-    False the raw target is sent and the filter only counts."""
+    False the raw target is sent and the filter only counts. With ``recover`` False the arm
+    stays where the actions left it (a DAgger prefix) instead of opening and going home."""
     import numpy as np
     from envs.utils import ArmTag
 
@@ -287,8 +300,9 @@ def run_actions(
             for t in plan.command.targets
         ):
             break
-    twin._recover(ArmTag("left"))
-    twin._settle(60)
+    if recover:
+        twin._recover(ArmTag("left"))
+        twin._settle(60)
     return {
         "lifted": tracker.order,
         "episode_time_s": round(actions / fps, 2),
@@ -313,6 +327,34 @@ def run_policy(
         max_actions,
         safety_on,
     )
+
+
+def dagger_prefix_actions(plan: EpisodePlan, low: int, high: int) -> int:
+    """Seeded number of policy actions before the expert takes over (same for every language)."""
+    return random.Random(f"{plan.seed}/dagger").randint(low, high)
+
+
+def run_dagger_prefix(twin, client, plan: EpisodePlan, fps: float, size, actions: int) -> dict:
+    """Let the policy drive for ``actions`` steps through the safety filter, then open the
+    gripper and leave the arm where it is, so the expert starts from the policy's state."""
+    from envs.utils import ArmTag
+
+    client.reset()
+    result = run_actions(
+        twin,
+        plan,
+        lambda state, images: client.act(state, images, plan.command.text),
+        fps,
+        size,
+        actions,
+        True,
+        recover=False,
+    )
+    task = twin.task
+    task.plan_success = True
+    task.move(task.open_gripper(ArmTag("left")))
+    twin._settle(40)
+    return result
 
 
 def record_expert_targets(twin, plan: EpisodePlan, clock: StepClock, fps: float):
@@ -361,7 +403,9 @@ def scene_meta(scene: st.Scene) -> dict:
     }
 
 
-def record_meta(plan: EpisodePlan, result: dict, fps: float, spawns, size) -> dict:
+def record_meta(
+    plan: EpisodePlan, result: dict, fps: float, spawns, size, prefix: dict | None = None
+) -> dict:
     command = plan.command
     return {
         "task": command.text,
@@ -382,6 +426,7 @@ def record_meta(plan: EpisodePlan, result: dict, fps: float, spawns, size) -> di
         "spawns": {k: list(v) for k, v in (spawns or {}).items()},
         "image_size": list(size),
         "source": "robotwin_twin_scripted_expert (twin_eval)",
+        **({"dagger_prefix": prefix} if prefix else {}),
     }
 
 
@@ -454,9 +499,11 @@ def run(args) -> int:
     run_meta = {
         "format": FORMAT_VERSION,
         "executor": args.executor,
-        "checkpoint": {"policy": args.checkpoint, "replay": "expert replay"}.get(
-            args.executor, "scripted expert"
-        ),
+        "checkpoint": {
+            "policy": args.checkpoint,
+            "dagger": f"scripted expert after {args.checkpoint}",
+            "replay": "expert replay",
+        }.get(args.executor, "scripted expert"),
         "safety": "off" if args.no_safety else "on",
         "command_source": args.command_source,
         "commit": git_commit(),
@@ -464,7 +511,7 @@ def run(args) -> int:
         "class_share": args.class_share,
     }
     client = None
-    if args.executor == "policy":
+    if args.executor in ("policy", "dagger"):
         from policy_bridge import PolicyClient
 
         client = PolicyClient(args.policy_server)
@@ -505,6 +552,35 @@ def run(args) -> int:
                 record_meta(plan, result, args.fps, spawns, size),
                 cv2_saver(),
             )
+        elif args.executor == "dagger":
+            from twin_record import FrameRecorder, cv2_saver, next_episode_index, write_episode
+
+            steps = dagger_prefix_actions(plan, args.dagger_min_actions, args.dagger_max_actions)
+            prefix = run_dagger_prefix(twin, client, plan, args.fps, size, steps)
+            recorder = FrameRecorder(lambda: twin.record_frame(size), twin.step_dt(), args.fps)
+            recorder.attach(twin.task)
+            recorder.start()
+            result = run_expert(twin, plan, clock)
+            recorder.stop()
+            states, targets, times = recorder.arrays()
+            info = {
+                "policy": args.checkpoint,
+                "actions": steps,
+                "lifted": prefix["lifted"],
+                "safety_stop": prefix["safety_stop"],
+            }
+            args.record_dir.mkdir(parents=True, exist_ok=True)
+            write_episode(
+                args.record_dir,
+                next_episode_index(args.record_dir),
+                states,
+                targets,
+                times,
+                recorder.images,
+                record_meta(plan, result, args.fps, spawns, size, info),
+                cv2_saver(),
+            )
+            result["summary"] = f"policy {steps} actions, then expert: {result['summary']}"
         elif args.executor == "expert":
             result = run_expert(twin, plan, clock)
         elif args.executor == "policy":
@@ -573,7 +649,9 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path.home() / "worktrees/Panthera-HT_RoboTwin/RoboTwin",
     )
-    r.add_argument("--executor", choices=("expert", "policy", "replay"), required=True)
+    r.add_argument(
+        "--executor", choices=("expert", "policy", "replay", "dagger"), required=True
+    )
     r.add_argument("--policy-server", default="127.0.0.1:5555")
     r.add_argument("--checkpoint", default="", help="label of the served checkpoint (logged)")
     r.add_argument("--episodes", type=int, default=30)
@@ -605,6 +683,12 @@ def main(argv: list[str] | None = None) -> int:
         help="expert executor: also save every episode in the raw training format (twin_record.py)",
     )
     r.add_argument(
+        "--dagger-min-actions", type=int, default=15, help="dagger: shortest policy prefix"
+    )
+    r.add_argument(
+        "--dagger-max-actions", type=int, default=150, help="dagger: longest policy prefix"
+    )
+    r.add_argument(
         "--no-safety",
         action="store_true",
         help="diagnostic: send targets without the safety filter (decisions are still counted)",
@@ -616,10 +700,14 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--json", type=Path, default=None, help="also write the rows as JSON")
     args = parser.parse_args(argv)
     if args.cmd == "run":
-        if args.record_dir and args.executor != "expert":
-            parser.error("--record-dir needs --executor expert")
-        if args.executor == "policy" and not args.checkpoint:
-            parser.error("--checkpoint is required with --executor policy")
+        if args.record_dir and args.executor not in ("expert", "dagger"):
+            parser.error("--record-dir needs --executor expert or dagger")
+        if args.executor in ("policy", "dagger") and not args.checkpoint:
+            parser.error(f"--checkpoint is required with --executor {args.executor}")
+        if args.executor == "dagger" and not args.record_dir:
+            parser.error("--executor dagger needs --record-dir")
+        if not 1 <= args.dagger_min_actions <= args.dagger_max_actions:
+            parser.error("need 1 <= --dagger-min-actions <= --dagger-max-actions")
         return run(args)
     return summarise_cmd(args)
 
